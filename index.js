@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
 
 //const currency = require("./routes/CurrencyService");
 const auth = require("./routes/auth");
-const newsLetter = require("./routes/SendNewsLetter");
+const newsLetter = require("./routes/NewsLetter");
 
 app.use(cors())
 
