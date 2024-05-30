@@ -163,11 +163,11 @@ router.post("/sign-up", async (req, res) => {
   const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
   const user = new User({
+    firstName : req.body.firstName,
+    lastName : req.body.lastName,
     email: req.body.email,
     password: hashedPassword,
-    phone: req.body.phone,
     balance: "0.00",
-    fullname: req.body.fullname,
   });
   try {
     const savedUser = await user.save();
