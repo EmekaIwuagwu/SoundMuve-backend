@@ -63,7 +63,7 @@ router.post("/subscribe-newsletter", async (req, res) => {
     });
 
     const saveNewsLetterEmail = await subNewsLetter.save();
-    res.send({ message: "Subscribtion Complete!", saveNewsLetterEmail });
+    res.send({ message: "Subscription Complete!", saveNewsLetterEmail });
 
 
   } catch (error) {
