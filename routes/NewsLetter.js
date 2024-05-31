@@ -71,5 +71,40 @@ router.post("/subscribe-newsletter", async (req, res) => {
   }
 });
 
+router.post("/contact-us", async (req, res) => {
+  try {
+    const { subject, name, email, msg } = req.body;
+
+    if (!subject || !name || !email || !msg) {
+      return res.status(400).json({ message: "Missing subject, name, email, or message in the request body" });
+    }
+
+    let transporter = nodemailer.createTransport({
+      host: "mail.qstix.com.ng",
+      port: 465,
+      secure: true,
+      auth: {
+        user: "no-reply@qstix.com.ng",
+        pass: "EmekaIwuagwu87**"
+      },
+    });
+
+    let info = await transporter.sendMail({
+      from: `${name} <${email}>`, // sender address
+      to: 'latham01@yopmail.com', // recipient address
+      subject: 'New Message from Contact-Us', // Subject line
+      html: `<p><strong>Name:</strong> ${name}</p>
+             <p><strong>Email:</strong> ${email}</p>
+             <p><strong>Message:</strong></p>
+             <p>${msg}</p>`, // html body
+    });
+
+    res.status(200).json({ message: "Message sent successfully", info });
+  } catch (error) {
+    res.status(500).json({ message: "An error occurred while sending the message", error: error.message });
+  }
+});
+
+
 
 module.exports = router;
