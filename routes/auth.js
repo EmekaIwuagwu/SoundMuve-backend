@@ -26,7 +26,7 @@ const SendOTP = async (email, otp) => {
   let info = await transporter.sendMail({
     from: '"Techguard" <no-reply@qstix.com.ng>',
     to: email,
-    subject: "Your Signon One Time password",
+    subject: "Your One Time password",
     html: `<html>
       <head>
         <title></title>
