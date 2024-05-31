@@ -6,22 +6,22 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
 
-const SendLoginNotification = async (email) =>{
+const SendLoginNotification = async (email) => {
   let transporter = nodemailer.createTransport({
-    host : "mail.qstix.com.ng",
-    port : 465,
-    secure : true,
-    auth :{
-      user : "no-reply@qstix.com.ng",
-      pass : "EmekaIwuagwu87**"
+    host: "mail.qstix.com.ng",
+    port: 465,
+    secure: true,
+    auth: {
+      user: "no-reply@qstix.com.ng",
+      pass: "EmekaIwuagwu87**"
     },
   })
-  
+
   let info = await transporter.sendMail({
-    from : '"Techguard" <no-reply@qstix.com.ng>',
-    to : email,
-    subject : "Login Notification",
-    html :
+    from: '"Techguard" <no-reply@qstix.com.ng>',
+    to: email,
+    subject: "Login Notification",
+    html:
       `<div align="center">
       <table border="0" width="80%">
         <tr>
@@ -74,23 +74,23 @@ const SendLoginNotification = async (email) =>{
   });
 }
 
-const SendsignUpNotification = async (email) =>{
+const SendsignUpNotification = async (email) => {
 
   let transporter = nodemailer.createTransport({
-    host : "mail.qstix.com.ng",
-    port : 465,
-    secure : true,
-    auth :{
-      user : "no-reply@qstix.com.ng",
-      pass : "EmekaIwuagwu87**"
+    host: "mail.qstix.com.ng",
+    port: 465,
+    secure: true,
+    auth: {
+      user: "no-reply@qstix.com.ng",
+      pass: "EmekaIwuagwu87**"
     },
   })
 
   let info = await transporter.sendMail({
-    from : '"Techguard" <no-reply@qstix.com.ng>',
-    to : email,
-    subject : "Registration complete!",
-    html :
+    from: '"Techguard" <no-reply@qstix.com.ng>',
+    to: email,
+    subject: "Registration complete!",
+    html:
       `<html>
 
       <head>
@@ -152,44 +152,65 @@ const SendsignUpNotification = async (email) =>{
       
       </html>`
   });
-  
+
 }
 
 router.post("/sign-up", async (req, res) => {
-  const emailExist = await User.findOne({ email: req.body.email });
-  if (emailExist) return res.status(400).send({message: "Email Exists"});
-
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(req.body.password, salt);
-
-  const user = new User({
-    firstName : req.body.firstName,
-    lastName : req.body.lastName,
-    email: req.body.email,
-    password: hashedPassword,
-    balance: "0.00",
-  });
   try {
+    // Check if the required fields are provided
+    const { email, password, firstName, lastName } = req.body;
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).send({ message: "All fields are required" });
+    }
+
+    // Check if email already exists
+    const emailExist = await User.findOne({ email });
+    if (emailExist) {
+      return res.status(400).send({ message: "Email already exists" });
+    }
+
+    // Generate salt and hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      balance: "0.00",
+      teamType: null,
+      ArtistName: null,
+      phoneNumber: null,
+      country: null,
+      gender: null,
+      recordLabelName: null
+    });
+
+    // Save user and send notification
     const savedUser = await user.save();
-    SendsignUpNotification(req.body.email);
-    res.send({ message: "Registration Successful", savedUser });
+    SendsignUpNotification(email);
+
+    // Send success response
+    res.send({ message: "Registration successful", savedUser });
   } catch (err) {
-    res.status(400).send({message : err});
+    res.status(500).send({ message: "Server error", error: err.message });
   }
 });
 
 router.post("/sign-in", async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
-  if (!user) return res.status(400).send({message : "User does not Exist"});
+  if (!user) return res.status(400).send({ message: "User does not Exist" });
   const validPass = await bcrypt.compare(req.body.password, user.password);
-  if (!validPass) return res.status(400).send({message: "Wrong Password"});
+  if (!validPass) return res.status(400).send({ message: "Wrong Password" });
 
   const token = jwt.sign({ email: req.body.email }, "migospay", {
     expiresIn: "1h",
   });
 
   SendLoginNotification(req.body.email);
-  res.send({ message: "Login Successful", user ,token: token });
+  res.send({ message: "Login Successful", user, token: token });
 });
 
 router.get("/get-info/:email", async (req, res) => {
@@ -223,7 +244,7 @@ router.post("/reset-password", async (req, res) => {
     const password = req.body.password;
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    await User.findOneAndUpdate({email : email}, {$set: {password : hashedPassword}});
+    await User.findOneAndUpdate({ email: email }, { $set: { password: hashedPassword } });
 
     return res.send({ error: false, message: "Password Changed" });
 
@@ -234,14 +255,37 @@ router.post("/reset-password", async (req, res) => {
 
 router.post("/forgot-password", async (req, res) => {
   try {
-    
+
     const email = req.body.email;
     const password = req.body.password;
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    await User.findOneAndUpdate({email : email}, {$set: {password : hashedPassword}});
+    await User.findOneAndUpdate({ email: email }, { $set: { password: hashedPassword } });
 
     return res.send({ error: false, message: "Password Changed" });
+
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
+
+router.patch("/updateTeam-details", async (req, res) => {
+  try {
+    const email = req.body.email;
+    const teamType = req.body.teamType;
+    const ArtistName = req.body.ArtistName;
+    const phoneNumber = req.body.phoneNumber;
+    const country = req.body.country;
+    const gender = req.body.gender;
+    const recordLabelName = req.body.recordLabelName;
+
+    if (teamType == "Artist") {
+      const singleUser = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: ArtistName,teamType: teamType, phoneNumber: phoneNumber, country: country, gender: gender, recordLabelName: null } });
+      return res.send({ error: false, message: "Artist Details Updated Successfully", singleUser });
+    }else{
+      const recordLabel = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: null, teamType: teamType, phoneNumber: phoneNumber, country: country, gender: null, recordLabelName: recordLabelName } }); 
+      return res.send({ error: false, message: "Record Label Details Updated Successfully", recordLabel });
+    }
 
   } catch (error) {
     res.status(404).json({ message: error.message });
