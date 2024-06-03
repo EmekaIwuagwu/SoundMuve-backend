@@ -187,6 +187,104 @@ const SendsignUpNotification = async (email) => {
   });
 };
 
+router.post("/sign-up", async (req, res) => {
+  try {
+    // Check if the required fields are provided
+    const { email, password, firstName, lastName } = req.body;
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).send({ message: "All fields are required" });
+    }
+
+    // Check if email already exists
+    const emailExist = await User.findOne({ email });
+    if (emailExist) {
+      return res.status(400).send({ message: "Email already exists" });
+    }
+
+    // Generate salt and hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create new user
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      balance: "0.00",
+      teamType: null,
+      ArtistName: null,
+      phoneNumber: null,
+      country: null,
+      gender: null,
+      recordLabelName: null
+    });
+
+    // Save user and send notification
+    const savedUser = await user.save();
+    SendsignUpNotification(email);
+
+    // Send success response
+    res.send({ message: "Registration successful", savedUser });
+  } catch (err) {
+    res.status(500).send({ message: "Server error", error: err.message });
+  }
+});
+
+router.post("/sign-in", async (req, res) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) return res.status(400).send({ message: "User does not Exist" });
+  const validPass = await bcrypt.compare(req.body.password, user.password);
+  if (!validPass) return res.status(400).send({ message: "Wrong Password" });
+
+  const token = jwt.sign({ email: req.body.email }, "migospay", {
+    expiresIn: "1h",
+  });
+
+  SendLoginNotification(req.body.email);
+  res.send({ message: "Login Successful", user, token: token });
+});
+
+router.get("/get-info/:email", async (req, res) => {
+  try {
+    if (
+      !req.headers.authorization ||
+      !req.headers.authorization.startsWith("Bearer ") ||
+      !req.headers.authorization.split(" ")[1]
+    ) {
+      return res.status(422).json({ message: "Please Provide Token!" });
+    }
+    const user = await User.find({ email: req.params.email });
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
+
+
+router.patch("/updateTeam-details", async (req, res) => {
+  try {
+    const email = req.body.email;
+    const teamType = req.body.teamType;
+    const ArtistName = req.body.ArtistName;
+    const phoneNumber = req.body.phoneNumber;
+    const country = req.body.country;
+    const gender = req.body.gender;
+    const recordLabelName = req.body.recordLabelName;
+
+    if (teamType == "Artist") {
+      const singleUser = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: ArtistName,teamType: teamType, phoneNumber: phoneNumber, country: country, gender: gender, recordLabelName: null } });
+      return res.send({ error: false, message: "Artist Details Updated Successfully" });
+    }else{
+      const recordLabel = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: null, teamType: teamType, phoneNumber: phoneNumber, country: country, gender: null, recordLabelName: recordLabelName } }); 
+      return res.send({ error: false, message: "Record Label Details Updated Successfully" });
+    }
+
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
+
 router.post("/sendotp-email", async (req, res) => {
   try {
     const { email } = req.body;
