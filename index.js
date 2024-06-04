@@ -10,6 +10,7 @@ const port = process.env.PORT || 3000;
 //const currency = require("./routes/CurrencyService");
 const auth = require("./routes/auth");
 const newsLetter = require("./routes/NewsLetter");
+const release = require("./routes/Release");
 
 app.use(cors())
 
@@ -45,6 +46,7 @@ connectDB();
 // Routes
 app.use("/api/auth", auth);
 app.use("/api/newsLetter", newsLetter);
+app.use("/api/Release",release)
 
 app.get("/", function (req, res) {
   res.json({ homeresponse: "Welcome" });
