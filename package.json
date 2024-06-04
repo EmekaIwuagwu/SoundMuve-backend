@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "preinstall": "npm uninstall cloudinary && npm install cloudinary@1.21.0",
+    "preinstall": "npm i multer-storage-cloudinary --force",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
