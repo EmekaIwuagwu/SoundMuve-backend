@@ -369,7 +369,7 @@ router.get("/checkProfileInformation/:email", async (req, res) => {
     const missingFields = requiredFields.filter(field => !user[field]);
 
     if (missingFields.length > 0) {
-      return res.status(200).json({ message: "Some information is missing", missingFields });
+      return res.status(200).json({ message: "Some Missing information on your Profile", missingFields });
     }
 
     return res.status(200).json({ message: "All information updated successfully" });
