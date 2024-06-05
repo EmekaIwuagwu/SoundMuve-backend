@@ -365,7 +365,7 @@ router.get("/checkProfileInformation/:email", async (req, res) => {
     }
 
     // Check if any required fields are missing
-    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'balance'];
+    const requiredFields = ['firstName', 'lastName', 'email', 'password'];
     const missingFields = requiredFields.filter(field => !user[field]);
 
     if (missingFields.length > 0) {
