@@ -290,65 +290,53 @@ function generateRefreshToken(user) {
   return jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' }); // Refresh token expires in 7 days
 }
 
+
 // Endpoint to maintain persistence
 router.get("/maintainPersistence", async (req, res) => {
   try {
-    if (
-      !req.headers.authorization ||
-      !req.headers.authorization.startsWith("Bearer ") ||
-      !req.headers.authorization.split(" ")[1]
-    ) {
-      return res.status(422).json({ message: "Please Provide Token!" });
+    const accessToken = req.headers.authorization?.split(" ")[1];
+    const refreshToken = req.headers.refresh?.split(" ")[1];
+
+    if (!accessToken) {
+      return res.status(403).json({ message: "Please Provide Access Token!" });
     }
 
-    // Extract the token from the authorization header
-    const token = req.headers.authorization.split(" ")[1];
-
     // Verify the access token
-    jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+    jwt.verify(accessToken, process.env.JWT_SECRET, async (err, decoded) => {
       if (err) {
-        // If token is invalid or expired, try to verify the refresh token
-        if (err.name === 'TokenExpiredError') {
-          if (
-            !req.headers.refresh ||
-            !req.headers.refresh.startsWith("Bearer ") ||
-            !req.headers.refresh.split(" ")[1]
-          ) {
-            return res.status(403).json({ message: "Please Provide Refresh Token!" });
+        // If access token is invalid or expired, check refresh token
+        if (!refreshToken) {
+          return res.status(403).json({ message: "Please Provide Refresh Token!" });
+        }
+
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
+          if (err) {
+            return res.status(403).json({ message: "Invalid Refresh Token!" });
           }
 
-          const refreshToken = req.headers.refresh.split(" ")[1];
-          jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
-            if (err) {
-              return res.status(403).json({ message: "Invalid Refresh Token!" });
-            }
+          // Find the user by ID
+          const dbUser = await User.findById(decoded.id);
+          if (!dbUser) {
+            return res.status(404).json({ message: "User not found!" });
+          }
 
-            // Find the user by ID
-            const dbUser = await User.findById(user.id);
-            if (!dbUser) {
-              return res.status(404).json({ message: "User not found!" });
-            }
+          // Generate new access token and refresh token
+          const newAccessToken = generateAccessToken(dbUser);
+          const newRefreshToken = generateRefreshToken(dbUser);
 
-            // Generate new access token and refresh token
-            const newAccessToken = generateAccessToken(dbUser);
-            const newRefreshToken = generateRefreshToken(dbUser);
-
-            return res.status(200).json({
-              message: "Token Refreshed",
-              accessToken: newAccessToken,
-              refreshToken: newRefreshToken
-            });
+          return res.status(200).json({
+            message: "Token Refreshed",
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken
           });
-        } else {
-          return res.status(403).json({ message: "Invalid Access Token!" });
-        }
+        });
       } else {
         // Token is valid, user is logged in
         return res.status(200).json({ message: "User is logged in" });
       }
     });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
