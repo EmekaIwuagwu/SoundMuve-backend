@@ -302,7 +302,7 @@ function generateRefreshToken(user) {
 }
 
 // Endpoint to maintain persistence
-router.get("/maintainPersistence", async (req, res) => {
+router.get("/refresh-token", async (req, res) => {
   try {
     const accessToken = req.headers.authorization?.split(" ")[1];
     const refreshToken = req.headers.refresh?.split(" ")[1];
