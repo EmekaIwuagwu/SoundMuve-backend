@@ -260,10 +260,10 @@ router.post("/sign-in", async (req, res) => {
     if (!validPass) return res.status(400).send({ message: "Wrong Password" });
 
     // Generate access token
-    const accessToken = jwt.sign({ email: req.body.email }, "soundmuve", { expiresIn: "1h" });
+    const accessToken = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
     // Generate refresh token
-    const refreshToken = jwt.sign({ email: req.body.email }, "refreshTokenSecret", { expiresIn: "7d" });
+    const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
     SendLoginNotification(req.body.email);
 
@@ -273,6 +273,7 @@ router.post("/sign-in", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 
 router.get("/get-info/:email", async (req, res) => {
@@ -328,8 +329,8 @@ router.get("/maintainPersistence", async (req, res) => {
           }
 
           // Generate new access token and refresh token
-          const newAccessToken = generateAccessToken(dbUser);
-          const newRefreshToken = generateRefreshToken(dbUser);
+          const newAccessToken = jwt.sign({ email: dbUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+          const newRefreshToken = jwt.sign({ id: dbUser._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
           return res.status(200).json({
             message: "Token Refreshed",
@@ -348,8 +349,6 @@ router.get("/maintainPersistence", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-
 
 
 router.get("/checkProfileInformation/:email", async (req, res) => {
