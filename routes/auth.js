@@ -300,12 +300,11 @@ function generateRefreshToken(user) {
   return jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' }); // Refresh token expires in 7 days
 }
 
-
 // Endpoint to maintain persistence
 router.get("/maintainPersistence", async (req, res) => {
   try {
     const accessToken = req.headers.authorization?.split(" ")[1];
-    const refreshToken = req.headers.authorization?.split(" ")[2]; // Extract refresh token from authorization header
+    const refreshToken = req.headers.refresh?.split(" ")[1];
 
     if (!accessToken) {
       return res.status(403).json({ message: "Please Provide Access Token!" });
@@ -319,26 +318,27 @@ router.get("/maintainPersistence", async (req, res) => {
           return res.status(403).json({ message: "Please Provide Refresh Token!" });
         }
 
-        // Verify the refresh token
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decodedRefresh) => {
-          if (err) {
-            return res.status(403).json({ message: "Invalid Refresh Token!" });
-          }
-
-          // Find the user by ID
-          const dbUser = await User.findById(decodedRefresh.id);
+        try {
+          // Verify the refresh token
+          const decodedRefreshToken = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+          const dbUser = await User.findById(decodedRefreshToken.id);
+          
           if (!dbUser) {
             return res.status(404).json({ message: "User not found!" });
           }
 
-          // Generate new access token
+          // Generate new access token and refresh token
           const newAccessToken = generateAccessToken(dbUser);
+          const newRefreshToken = generateRefreshToken(dbUser);
 
           return res.status(200).json({
             message: "Token Refreshed",
-            accessToken: newAccessToken
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken
           });
-        });
+        } catch (refreshTokenError) {
+          return res.status(403).json({ message: "Invalid Refresh Token!" });
+        }
       } else {
         // Token is valid, user is logged in
         return res.status(200).json({ message: "User is logged in" });
@@ -348,6 +348,7 @@ router.get("/maintainPersistence", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
 
 
 
