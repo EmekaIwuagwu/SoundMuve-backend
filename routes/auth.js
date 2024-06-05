@@ -353,6 +353,7 @@ router.get("/maintainPersistence", async (req, res) => {
 });
 
 
+
 router.get("/checkProfileInformation", async (req, res) => {
   try {
     // Check if the authorization header is provided
@@ -367,12 +368,12 @@ router.get("/checkProfileInformation", async (req, res) => {
     // Extract the token from the authorization header
     const token = req.headers.authorization.split(" ")[1];
 
-    // Decode the JWT token to get the user ID
+    // Decode the JWT token to get the user's email
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id;
+    const userEmail = decoded.email;
 
-    // Find the user by ID
-    const user = await User.findById(userId);
+    // Find the user by email
+    const user = await User.findOne({ email: userEmail });
     if (!user) {
       return res.status(404).json({ message: "User not found!" });
     }
@@ -390,8 +391,6 @@ router.get("/checkProfileInformation", async (req, res) => {
     res.status(404).json({ message: error.message });
   }
 });
-
-
 
 router.patch("/updateTeam-details", upload.single('logo'), async (req, res) => {
   try {
