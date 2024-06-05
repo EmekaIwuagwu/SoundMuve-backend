@@ -367,8 +367,9 @@ router.get("/checkProfileInformation", async (req, res) => {
     // Extract the token from the authorization header
     const token = req.headers.authorization.split(" ")[1];
 
-    // Assuming the token contains the user ID directly
-    const userId = token; // Modify this if your token structure is different
+    // Decode the JWT token to get the user ID
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
 
     // Find the user by ID
     const user = await User.findById(userId);
