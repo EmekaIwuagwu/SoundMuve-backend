@@ -305,7 +305,7 @@ function generateRefreshToken(user) {
 router.get("/maintainPersistence", async (req, res) => {
   try {
     const accessToken = req.headers.authorization?.split(" ")[1];
-    const refreshToken = req.headers.refresh?.split(" ")[1];
+    const refreshToken = req.headers.authorization?.split(" ")[2]; // Extract refresh token from authorization header
 
     if (!accessToken) {
       return res.status(403).json({ message: "Please Provide Access Token!" });
@@ -319,25 +319,24 @@ router.get("/maintainPersistence", async (req, res) => {
           return res.status(403).json({ message: "Please Provide Refresh Token!" });
         }
 
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
+        // Verify the refresh token
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decodedRefresh) => {
           if (err) {
             return res.status(403).json({ message: "Invalid Refresh Token!" });
           }
 
           // Find the user by ID
-          const dbUser = await User.findById(decoded.id);
+          const dbUser = await User.findById(decodedRefresh.id);
           if (!dbUser) {
             return res.status(404).json({ message: "User not found!" });
           }
 
-          // Generate new access token and refresh token
+          // Generate new access token
           const newAccessToken = generateAccessToken(dbUser);
-          const newRefreshToken = generateRefreshToken(dbUser);
 
           return res.status(200).json({
             message: "Token Refreshed",
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken
+            accessToken: newAccessToken
           });
         });
       } else {
@@ -349,6 +348,7 @@ router.get("/maintainPersistence", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
 
 
 router.get("/checkProfileInformation/:email", async (req, res) => {
