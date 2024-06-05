@@ -252,18 +252,28 @@ router.post("/sign-up", async (req, res) => {
 });
 
 router.post("/sign-in", async (req, res) => {
-  const user = await User.findOne({ email: req.body.email });
-  if (!user) return res.status(400).send({ message: "User does not Exist" });
-  const validPass = await bcrypt.compare(req.body.password, user.password);
-  if (!validPass) return res.status(400).send({ message: "Wrong Password" });
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) return res.status(400).send({ message: "User does not Exist" });
+    
+    const validPass = await bcrypt.compare(req.body.password, user.password);
+    if (!validPass) return res.status(400).send({ message: "Wrong Password" });
 
-  const token = jwt.sign({ email: req.body.email }, "migospay", {
-    expiresIn: "1h",
-  });
+    // Generate access token
+    const accessToken = jwt.sign({ email: req.body.email }, "soundmuve", { expiresIn: "1h" });
 
-  SendLoginNotification(req.body.email);
-  res.send({ message: "Login Successful", user, token: token });
+    // Generate refresh token
+    const refreshToken = jwt.sign({ email: req.body.email }, "refreshTokenSecret", { expiresIn: "7d" });
+
+    SendLoginNotification(req.body.email);
+
+    // Return tokens to client
+    res.send({ message: "Login Successful", user, token: accessToken, refreshToken: refreshToken });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
+
 
 router.get("/get-info/:email", async (req, res) => {
   try {
