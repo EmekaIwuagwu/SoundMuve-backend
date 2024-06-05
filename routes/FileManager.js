@@ -23,7 +23,7 @@ router.post("/submit-album", async (req, res) => {
     });
 
     const submitAlbumOn = await submitAlbum.save();
-    res.send({ message: "Subscribtion Complete!", submitAlbumOn });
+    res.send({ message: "Subscription Complete!", submitAlbumOn });
 
 
   } catch (error) {

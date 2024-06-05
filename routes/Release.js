@@ -1,3 +1,4 @@
+require('dotenv').config()
 const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
@@ -9,10 +10,10 @@ const multer = require("multer");
 const Release = require("../models/Release");
 
 cloudinary.config({
-    cloud_name: "ddpq1fg9s",
-    api_key: "137683632675467",
-    api_secret: "IIBQ7EpXQJZnPmbRsL4sW9Pny4E",
-});
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET
+  });
 
 //const multer = require("multer");
 

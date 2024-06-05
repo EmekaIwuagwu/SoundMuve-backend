@@ -24,14 +24,14 @@ router.post("/send-newsLetter", async (req, res) => {
     }
 
     let transporter = nodemailer.createTransport({
-      host: "mail.qstix.com.ng",
-      port: 465,
+      host: process.env.SMTP_SERVER,
+      port: process.env.SMTP_PORT,
       secure: true,
       auth: {
-        user: "no-reply@qstix.com.ng",
-        pass: "EmekaIwuagwu87**"
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
       },
-    })
+    });
 
     let info = await transporter.sendMail({
       from: '"No Reply" <no-reply@qstix.com.ng>', // sender address
@@ -80,12 +80,12 @@ router.post("/contact-us", async (req, res) => {
     }
 
     let transporter = nodemailer.createTransport({
-      host: "mail.qstix.com.ng",
-      port: 465,
+      host: process.env.SMTP_SERVER,
+      port: process.env.SMTP_PORT,
       secure: true,
       auth: {
-        user: "no-reply@qstix.com.ng",
-        pass: "EmekaIwuagwu87**"
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
       },
     });
 

@@ -1,3 +1,4 @@
+require('dotenv').config()
 const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
@@ -10,9 +11,9 @@ const OneTimePass = require("../models/OneTimePass"); // Ensure this is the corr
 
 
 cloudinary.config({
-  cloud_name: "ddpq1fg9s",
-  api_key: "137683632675467",
-  api_secret: "IIBQ7EpXQJZnPmbRsL4sW9Pny4E"
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET
 });
 
 const storage = new CloudinaryStorage({
@@ -34,12 +35,12 @@ const generateOtp = async (email) => {
 
 const SendOTP = async (email, otp) => {
   let transporter = nodemailer.createTransport({
-    host: "mail.qstix.com.ng",
-    port: 465,
+    host: process.env.SMTP_SERVER,
+    port: process.env.SMTP_PORT,
     secure: true,
     auth: {
-      user: "no-reply@qstix.com.ng",
-      pass: "EmekaIwuagwu87**"
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     },
   });
 
@@ -68,12 +69,12 @@ const SendOTP = async (email, otp) => {
 
 const SendLoginNotification = async (email) => {
   let transporter = nodemailer.createTransport({
-    host: "mail.qstix.com.ng",
-    port: 465,
+    host: process.env.SMTP_SERVER,
+    port: process.env.SMTP_PORT,
     secure: true,
     auth: {
-      user: "no-reply@qstix.com.ng",
-      pass: "EmekaIwuagwu87**"
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     },
   });
 
@@ -135,12 +136,12 @@ const SendLoginNotification = async (email) => {
 
 const SendsignUpNotification = async (email) => {
   let transporter = nodemailer.createTransport({
-    host: "mail.qstix.com.ng",
-    port: 465,
+    host: process.env.SMTP_SERVER,
+    port: process.env.SMTP_PORT,
     secure: true,
     auth: {
-      user: "no-reply@qstix.com.ng",
-      pass: "EmekaIwuagwu87**"
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     },
   });
 
@@ -255,7 +256,7 @@ router.post("/sign-in", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) return res.status(400).send({ message: "User does not Exist" });
-    
+
     const validPass = await bcrypt.compare(req.body.password, user.password);
     if (!validPass) return res.status(400).send({ message: "Wrong Password" });
 
@@ -323,7 +324,7 @@ router.get("/maintainPersistence", async (req, res) => {
           // Verify the refresh token
           const decodedRefreshToken = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
           const dbUser = await User.findById(decodedRefreshToken.id);
-          
+
           if (!dbUser) {
             return res.status(404).json({ message: "User not found!" });
           }
@@ -387,7 +388,7 @@ router.patch("/updateTeam-details", upload.single('logo'), async (req, res) => {
     const recordLabelName = req.body.recordLabelName;
 
     if (teamType == "Artist") {
-      const user = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: ArtistName,teamType: teamType, phoneNumber: phoneNumber, country: country, gender: gender, recordLabelName: null } }, { new: true });
+      const user = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: ArtistName, teamType: teamType, phoneNumber: phoneNumber, country: country, gender: gender, recordLabelName: null } }, { new: true });
       return res.send({ error: false, message: "Artist Details Updated Successfully", user });
     } else {
       const result = await cloudinary.uploader.upload(req.file.path);
