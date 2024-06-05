@@ -353,24 +353,10 @@ router.get("/maintainPersistence", async (req, res) => {
 });
 
 
-
-router.get("/checkProfileInformation", async (req, res) => {
+router.get("/checkProfileInformation/:email", async (req, res) => {
   try {
-    // Check if the authorization header is provided
-    if (
-      !req.headers.authorization ||
-      !req.headers.authorization.startsWith("Bearer ") ||
-      !req.headers.authorization.split(" ")[1]
-    ) {
-      return res.status(422).json({ message: "Please Provide Token!" });
-    }
-
-    // Extract the token from the authorization header
-    const token = req.headers.authorization.split(" ")[1];
-
-    // Decode the JWT token to get the user's email
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userEmail = decoded.email;
+    // Get the email from URL parameters
+    const userEmail = req.params.email;
 
     // Find the user by email
     const user = await User.findOne({ email: userEmail });
@@ -378,17 +364,17 @@ router.get("/checkProfileInformation", async (req, res) => {
       return res.status(404).json({ message: "User not found!" });
     }
 
-    // Check if all required fields are filled
+    // Check if any required fields are missing
     const requiredFields = ['firstName', 'lastName', 'email', 'password', 'balance'];
     const missingFields = requiredFields.filter(field => !user[field]);
 
     if (missingFields.length > 0) {
-      return res.status(200).json({ message: "Some information are pending", missingFields });
+      return res.status(200).json({ message: "Some information is missing", missingFields });
     }
 
-    return res.status(200).json({ message: "Information Updated" });
+    return res.status(200).json({ message: "All information updated successfully" });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
