@@ -49,6 +49,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.SchemaTypes.Number,
     required:true,
   },
+  logoUrl: {
+    type: String,
+    max: 255,
+  },
   created_at: {
     type: Date,
     default: Date.now(),

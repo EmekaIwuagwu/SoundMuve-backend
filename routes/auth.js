@@ -2,8 +2,27 @@ const router = require("express").Router();
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const nodemailer = require("nodemailer");
 const OneTimePass = require("../models/OneTimePass"); // Ensure this is the correct path and model name
+
+
+cloudinary.config({
+  cloud_name: "ddpq1fg9s",
+  api_key: "137683632675467",
+  api_secret: "IIBQ7EpXQJZnPmbRsL4sW9Pny4E"
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'user_logos',
+    allowedFormats: ['jpg', 'png', 'jpeg'],
+  },
+});
+
+const upload = multer({ storage: storage });
 
 const generateOtp = async (email) => {
   const otp = Math.floor(1000 + Math.random() * 9000); // Generate OTP as a number
@@ -261,8 +280,118 @@ router.get("/get-info/:email", async (req, res) => {
   }
 });
 
+function generateAccessToken(user) {
+  return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' }); // Access token expires in 15 minutes
+}
 
-router.patch("/updateTeam-details", async (req, res) => {
+// Generate a new refresh token
+function generateRefreshToken(user) {
+  return jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' }); // Refresh token expires in 7 days
+}
+
+// Endpoint to maintain persistence
+router.get("/maintainPersistence", async (req, res) => {
+  try {
+    if (
+      !req.headers.authorization ||
+      !req.headers.authorization.startsWith("Bearer ") ||
+      !req.headers.authorization.split(" ")[1]
+    ) {
+      return res.status(422).json({ message: "Please Provide Token!" });
+    }
+
+    // Extract the token from the authorization header
+    const token = req.headers.authorization.split(" ")[1];
+
+    // Verify the access token
+    jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+      if (err) {
+        // If token is invalid or expired, try to verify the refresh token
+        if (err.name === 'TokenExpiredError') {
+          if (
+            !req.headers.refresh ||
+            !req.headers.refresh.startsWith("Bearer ") ||
+            !req.headers.refresh.split(" ")[1]
+          ) {
+            return res.status(403).json({ message: "Please Provide Refresh Token!" });
+          }
+
+          const refreshToken = req.headers.refresh.split(" ")[1];
+          jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
+            if (err) {
+              return res.status(403).json({ message: "Invalid Refresh Token!" });
+            }
+
+            // Find the user by ID
+            const dbUser = await User.findById(user.id);
+            if (!dbUser) {
+              return res.status(404).json({ message: "User not found!" });
+            }
+
+            // Generate new access token and refresh token
+            const newAccessToken = generateAccessToken(dbUser);
+            const newRefreshToken = generateRefreshToken(dbUser);
+
+            return res.status(200).json({
+              message: "Token Refreshed",
+              accessToken: newAccessToken,
+              refreshToken: newRefreshToken
+            });
+          });
+        } else {
+          return res.status(403).json({ message: "Invalid Access Token!" });
+        }
+      } else {
+        // Token is valid, user is logged in
+        return res.status(200).json({ message: "User is logged in" });
+      }
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
+
+
+router.get("/checkProfileInformation", async (req, res) => {
+  try {
+    // Check if the authorization header is provided
+    if (
+      !req.headers.authorization ||
+      !req.headers.authorization.startsWith("Bearer ") ||
+      !req.headers.authorization.split(" ")[1]
+    ) {
+      return res.status(422).json({ message: "Please Provide Token!" });
+    }
+
+    // Extract the token from the authorization header
+    const token = req.headers.authorization.split(" ")[1];
+
+    // Verify the token (Assuming you're using JWT)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+
+    // Check if all required fields are filled
+    const requiredFields = ['firstName', 'lastName', 'email', 'password', 'balance'];
+    const missingFields = requiredFields.filter(field => !user[field]);
+
+    if (missingFields.length > 0) {
+      return res.status(200).json({ message: "Some information are pending", missingFields });
+    }
+
+    return res.status(200).json({ message: "Information Updated" });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
+
+
+router.patch("/updateTeam-details", upload.single('logo'), async (req, res) => {
   try {
     const email = req.body.email;
     const teamType = req.body.teamType;
@@ -273,17 +402,19 @@ router.patch("/updateTeam-details", async (req, res) => {
     const recordLabelName = req.body.recordLabelName;
 
     if (teamType == "Artist") {
-      const singleUser = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: ArtistName,teamType: teamType, phoneNumber: phoneNumber, country: country, gender: gender, recordLabelName: null } });
-      return res.send({ error: false, message: "Artist Details Updated Successfully" });
-    }else{
-      const recordLabel = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: null, teamType: teamType, phoneNumber: phoneNumber, country: country, gender: null, recordLabelName: recordLabelName } }); 
-      return res.send({ error: false, message: "Record Label Details Updated Successfully" });
-    }
+      const user = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: ArtistName,teamType: teamType, phoneNumber: phoneNumber, country: country, gender: gender, recordLabelName: null } }, { new: true });
+      return res.send({ error: false, message: "Artist Details Updated Successfully", user });
+    } else {
+      const result = await cloudinary.uploader.upload(req.file.path);
 
+      const user = await User.findOneAndUpdate({ email: email }, { $set: { ArtistName: null, teamType: teamType, phoneNumber: phoneNumber, country: country, gender: null, recordLabelName: recordLabelName, logoUrl: result.secure_url } }, { new: true });
+      return res.send({ error: false, message: "Record Label Details Updated Successfully", user });
+    }
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(404).json({ error: true, message: error.message });
   }
 });
+
 
 router.post("/sendotp-email", async (req, res) => {
   try {
