@@ -444,5 +444,52 @@ router.post("/verifyotp-email", async (req, res) => {
   }
 });
 
+router.post("/reset-password", async (req, res) => {
+  try {
+    if (
+      !req.headers.authorization ||
+      !req.headers.authorization.startsWith("Bearer ") ||
+      !req.headers.authorization.split(" ")[1]
+    ) {
+      return res.status(422).json({ message: "Please Provide Token!" });
+    }
+
+    const email = req.body.email;
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+    const password = req.body.password;
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await User.findOneAndUpdate({email : email}, {$set: {password : hashedPassword}});
+
+    return res.send({ error: false, message: "Password Changed" });
+
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  try {
+    
+    const email = req.body.email;
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found!" });
+    }
+    const password = req.body.password;
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await User.findOneAndUpdate({email : email}, {$set: {password : hashedPassword}});
+
+    return res.send({ error: false, message: "Password Changed" });
+
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+});
+
 
 module.exports = router;
