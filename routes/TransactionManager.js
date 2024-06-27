@@ -142,20 +142,11 @@ router.get("/get-debit-transaction/:email", async (req, res) => {
 
 router.get('/check-transactions', async (req, res) => {
     try {
+        // Extract the start date, end date, and email from the query parameters
+        const { startDate, endDate, email } = req.query;
 
-        if (
-            !req.headers.authorization ||
-            !req.headers.authorization.startsWith("Bearer ") ||
-            !req.headers.authorization.split(" ")[1]
-        ) {
-            return res.status(422).json({ message: "Please Provide Token!" });
-        }
-
-        // Extract the start date and end date from the query parameters
-        const { startDate, endDate } = req.query;
-
-        if (!startDate || !endDate) {
-            return res.status(400).json({ message: "Please provide both startDate and endDate" });
+        if (!startDate || !endDate || !email) {
+            return res.status(400).json({ message: "Please provide startDate, endDate, and email" });
         }
 
         // Convert the start and end dates to Date objects
@@ -167,8 +158,9 @@ router.get('/check-transactions', async (req, res) => {
             return res.status(400).json({ message: "Invalid date format" });
         }
 
-        // Query the database for transactions within the date range
-        const transactions = await Trans.find({
+        // Query the database for transactions within the date range and matching email
+        const transactions = await Transactions.find({
+            email: email,
             created_at: {
                 $gte: start,
                 $lte: end
