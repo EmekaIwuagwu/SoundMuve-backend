@@ -95,7 +95,7 @@ router.get("/get-transactionby-email/:email", async (req, res) => {
         ) {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
-        const trans = await Transaction.find({ email: req.params.email }).sort({ created_at: -1 });
+        const trans = await Trans.find({ email: req.params.email }).sort({ created_at: -1 });
         res.status(200).json(trans);
     } catch (error) {
         res.status(404).json({ message: error.message });
@@ -111,7 +111,7 @@ router.get("/get-credit-transaction/:email", async (req, res) => {
         ) {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
-        const trans = await Transaction.find(
+        const trans = await Trans.find(
             { email: req.params.email, debit: 0.00 },
             { narration: true, credit: true, amount: true }
         ).sort({ created_at: -1 });
@@ -130,7 +130,7 @@ router.get("/get-debit-transaction/:email", async (req, res) => {
         ) {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
-        const trans = await Transaction.find(
+        const trans = await Trans.find(
             { email: req.params.email, credit: 0.00 },
             { narration: true, debit: true, amount: true }
         ).sort({ created_at: -1 });
