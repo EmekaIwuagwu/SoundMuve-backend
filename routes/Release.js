@@ -111,17 +111,17 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
 
         let updateData = {
             social_platform: social_platform,
-            store : store,
+            store: store,
             song: song,
             song_writer: Array.isArray(song_writer) ? song_writer : [song_writer], // Ensure it's an array
-            creative_name :creative_name,
-            songArtistsCreativeRole : Array.isArray(songArtistsCreativeRole) ? songArtistsCreativeRole : [songArtistsCreativeRole], // Ensure it's an array
+            creative_name: creative_name,
+            songArtistsCreativeRole: Array.isArray(songArtistsCreativeRole) ? songArtistsCreativeRole : [songArtistsCreativeRole], // Ensure it's an array
             copyright_ownership: copyright_ownership,
-            copyright_ownership_permissions : copyright_ownership_permissions,
+            copyright_ownership_permissions: copyright_ownership_permissions,
             isrc_number: isrc_number,
             language_lyrics: language_lyrics,
             lyrics: lyrics,
-            tikTokClipStartTime :  tikTokClipStartTime
+            tikTokClipStartTime: tikTokClipStartTime
         };
 
         if (req.files['mp3_file']) {
@@ -155,6 +155,7 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
         res.status(404).json({ message: error.message });
     }
 });
+
 
 
 

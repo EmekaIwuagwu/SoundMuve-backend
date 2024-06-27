@@ -91,7 +91,11 @@ const releaseSchema = new mongoose.Schema({
         max: 255,
     },
     song_writer: {
-        type: String,
+        type: [String], // Allowing array of strings
+        max: 255,
+    },
+    songArtistsCreativeRole: {
+        type: [String], // Allowing array of strings
         max: 255,
     },
     copyright_ownership: {
@@ -110,17 +114,14 @@ const releaseSchema = new mongoose.Schema({
         type: String,
         max: 14000,
     },
-
     mp3_url: {
         type: String,
         max: 255,
     },
-
     song_cover: {
         type: String,
         max: 255,
     },
-
     created_at: {
         type: Date,
         default: Date.now(),
