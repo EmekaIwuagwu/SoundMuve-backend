@@ -140,4 +140,46 @@ router.get("/get-debit-transaction/:email", async (req, res) => {
     }
 });
 
+router.get('/check-transactions', async (req, res) => {
+    try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
+        // Extract the start date and end date from the query parameters
+        const { startDate, endDate } = req.query;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ message: "Please provide both startDate and endDate" });
+        }
+
+        // Convert the start and end dates to Date objects
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Validate the dates
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({ message: "Invalid date format" });
+        }
+
+        // Query the database for transactions within the date range
+        const transactions = await Transactions.find({
+            created_at: {
+                $gte: start,
+                $lte: end
+            }
+        });
+
+        // Return the transactions
+        res.send(transactions);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;
