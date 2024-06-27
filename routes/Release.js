@@ -40,8 +40,8 @@ router.post("/create-release", async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        const { email, release_type, artist_name, language, primary_genre, secondary_genre, release_time, label_name, recording_location, upc_ean } = req.body;
-        if (!email || !release_type || !artist_name || !language || !primary_genre || !secondary_genre || !release_time || !label_name || !recording_location || !upc_ean) {
+        const { email, release_type, artist_name, language, primary_genre, secondary_genre, release_time, label_name, recording_location, upc_ean , listenerTimeZone, generalTimeZone, soldWorldwide} = req.body;
+        if (!email || !release_type || !artist_name || !language || !primary_genre || !secondary_genre || !release_time || !label_name || !recording_location || !upc_ean || !listenerTimeZone || !generalTimeZone || !soldWorldwide) {
             return res.status(400).send({ message: "All fields are required" });
         }
 
@@ -55,6 +55,9 @@ router.post("/create-release", async (req, res) => {
             secondary_genre,
             release_time,
             label_name,
+            listenerTimeZone, 
+            generalTimeZone,
+            soldWorldwide,
             recording_location,
             upc_ean,
             social_platform: null,
@@ -89,23 +92,33 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
         }
 
         const email = req.body.email;
+        const store = req.body.store;
         const release_type = req.body.release_type;
         const social_platform = req.body.social_platform;
+        const songArtistsCreativeRole = req.body.songArtistsCreativeRole; // Expecting an array
         const song = req.body.song;
-        const song_writer = req.body.song_writer;
+        const song_writer = req.body.song_writer; // Expecting an array
+        const creative_name = req.body.creative_name;
         const copyright_ownership = req.body.copyright_ownership;
+        const copyright_ownership_permissions = req.body.copyright_ownership_permissions;
         const isrc_number = req.body.isrc_number;
         const language_lyrics = req.body.language_lyrics;
         const lyrics = req.body.lyrics;
+        const tikTokClipStartTime = req.body.tikTokClipStartTime;
 
         let updateData = {
             social_platform: social_platform,
+            store : store,
             song: song,
-            song_writer: song_writer,
+            song_writer: Array.isArray(song_writer) ? song_writer : [song_writer], // Ensure it's an array
+            creative_name :creative_name,
+            songArtistsCreativeRole : Array.isArray(songArtistsCreativeRole) ? songArtistsCreativeRole : [songArtistsCreativeRole], // Ensure it's an array
             copyright_ownership: copyright_ownership,
+            copyright_ownership_permissions : copyright_ownership_permissions,
             isrc_number: isrc_number,
             language_lyrics: language_lyrics,
             lyrics: lyrics,
+            tikTokClipStartTime :  tikTokClipStartTime
         };
 
         if (req.files['mp3_file']) {
@@ -139,6 +152,7 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
         res.status(404).json({ message: error.message });
     }
 });
+
 
 
 router.get("/getReleaseByEmail/:email", async (req, res) => {

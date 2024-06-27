@@ -11,7 +11,37 @@ const releaseSchema = new mongoose.Schema({
         required: true,
         max: 255,
     },
+    tikTokClipStartTime: {
+        type: String,
+        required: true,
+        max: 255,
+    },
+    store: {
+        type: String,
+        required: true,
+        max: 255,
+    },
     artist_name: {
+        type: String,
+        required: true,
+        max: 255,
+    },
+    listenerTimeZone: {
+        type: String,
+        required: true,
+        max: 255,
+    },
+    generalTimeZone: {
+        type: String,
+        required: true,
+        max: 255,
+    },
+    soldWorldwide: {
+        type: String,
+        required: true,
+        max: 255,
+    },
+    copyright_ownership_permissions: {
         type: String,
         required: true,
         max: 255,
