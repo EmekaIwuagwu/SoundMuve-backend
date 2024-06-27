@@ -168,7 +168,7 @@ router.get('/check-transactions', async (req, res) => {
         }
 
         // Query the database for transactions within the date range
-        const transactions = await Transactions.find({
+        const transactions = await Trans.find({
             created_at: {
                 $gte: start,
                 $lte: end
