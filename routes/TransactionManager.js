@@ -3,7 +3,19 @@ const User = require("../models/User");
 const Trans = require("../models/Transactions");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const cloudinary = require("cloudinary").v2;
 const nodemailer = require("nodemailer");
+const { createObjectCsvWriter } = require('csv-writer');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET
+});
+
 
 router.get("/wallet-transfer", async (req, res) => {
     try {
@@ -173,5 +185,123 @@ router.get('/check-transactions', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+
+const generatePDF = async (transactions, filePath) => {
+    const doc = new PDFDocument();
+    doc.pipe(fs.createWriteStream(filePath));
+
+    doc.text('Transactions Report', { align: 'center', underline: true });
+    doc.moveDown();
+
+    // Fetch user balances
+    const userEmails = transactions.map(transaction => transaction.email);
+    const userBalances = await User.find({ email: { $in: userEmails } }).select('email balance');
+
+    transactions.forEach(transaction => {
+        const userBalance = userBalances.find(user => user.email === transaction.email).balance;
+
+        doc.text(`Date: ${transaction.created_at}`);
+        doc.text(`Narration: ${transaction.narration}`);
+        doc.text(`Credit: ${transaction.credit}`);
+        doc.text(`Debit: ${transaction.debit}`);
+        doc.text(`Amount: ${transaction.amount}`);
+        doc.text(`Balance: ${userBalance}`); // Include balance
+        doc.moveDown();
+    });
+
+    doc.end();
+};
+
+// Helper function to generate CSV
+const generateCSV = async (transactions, filePath) => {
+    const csvWriter = createObjectCsvWriter({
+        path: filePath,
+        header: [
+            { id: 'created_at', title: 'Date' },
+            { id: 'narration', title: 'Narration' },
+            { id: 'credit', title: 'Credit' },
+            { id: 'debit', title: 'Debit' },
+            { id: 'amount', title: 'Amount' },
+            { id: 'balance', title: 'Balance' }, // Add balance header
+        ],
+    });
+
+    // Fetch user balances
+    const userEmails = transactions.map(transaction => transaction.email);
+    const userBalances = await User.find({ email: { $in: userEmails } }).select('email balance');
+
+    const records = transactions.map(transaction => {
+        const userBalance = userBalances.find(user => user.email === transaction.email).balance;
+
+        return {
+            email: transaction.email,
+            narration: transaction.narration,
+            credit: transaction.credit,
+            debit: transaction.debit,
+            amount: transaction.amount,
+            balance: userBalance, // Include balance in each record
+            created_at: transaction.created_at,
+        };
+    });
+
+    await csvWriter.writeRecords(records);
+};
+
+router.get('/export-transactions', async (req, res) => {
+    try {
+        const { startDate, endDate, email, format } = req.query;
+
+        if (!startDate || !endDate || !email || !format) {
+            return res.status(400).json({ message: "Please provide startDate, endDate, email, and format (pdf or xls)" });
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({ message: "Invalid date format" });
+        }
+
+        const transactions = await Trans.find({
+            email: email,
+            created_at: {
+                $gte: start,
+                $lte: end,
+            },
+        });
+
+        if (transactions.length === 0) {
+            return res.status(404).json({ message: "No transactions found" });
+        }
+
+        const filePath = path.join(__dirname, `../temp/transactions.${format}`);
+
+        if (format === 'pdf') {
+            await generatePDF(transactions, filePath); // Await for PDF generation
+        } else if (format === 'xls') {
+            await generateCSV(transactions, filePath); // Await for CSV generation
+        } else {
+            return res.status(400).json({ message: "Invalid format. Use 'pdf' or 'xls'" });
+        }
+
+        cloudinary.uploader.upload(filePath, { resource_type: "raw" }, (error, result) => {
+            if (error) {
+                return res.status(500).json({ message: error.message });
+            }
+
+            fs.unlinkSync(filePath); // Delete the local file after upload
+
+            res.send({
+                error: false,
+                message: "Transactions exported successfully",
+                fileUrl: result.secure_url,
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 
 module.exports = router;
