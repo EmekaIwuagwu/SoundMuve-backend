@@ -159,7 +159,7 @@ router.get('/check-transactions', async (req, res) => {
         }
 
         // Query the database for transactions within the date range and matching email
-        const transactions = await Transactions.find({
+        const transactions = await Trans.find({
             email: email,
             created_at: {
                 $gte: start,
