@@ -13,12 +13,10 @@ const releaseSchema = new mongoose.Schema({
     },
     tikTokClipStartTime: {
         type: String,
-        required: true,
         max: 255,
     },
     store: {
         type: String,
-        required: true,
         max: 255,
     },
     artist_name: {
@@ -43,7 +41,6 @@ const releaseSchema = new mongoose.Schema({
     },
     copyright_ownership_permissions: {
         type: String,
-        required: true,
         max: 255,
     },
     language: {
