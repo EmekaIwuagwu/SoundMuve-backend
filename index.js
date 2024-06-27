@@ -11,6 +11,7 @@ const port = process.env.PORT || 3000;
 const auth = require("./routes/auth");
 const newsLetter = require("./routes/NewsLetter");
 const release = require("./routes/Release");
+const transactions = require("./routes/TransactionManager");
 
 app.use(cors())
 
@@ -47,6 +48,7 @@ connectDB();
 app.use("/api/auth", auth);
 app.use("/api/newsLetter", newsLetter);
 app.use("/api/Release",release)
+app.use("/api/wallet",transactions)
 
 app.get("/", function (req, res) {
   res.json({ homeresponse: "Welcome" });
