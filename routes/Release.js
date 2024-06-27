@@ -138,23 +138,23 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
             console.log('Updating release');
             console.log('Email:', email);
             console.log('Update Data:', updateData);
-            await Release.findOneAndUpdate({ email: email }, { $set: updateData }, { new: true })
-                .then(updatedRelease => {
-                    console.log('Updated Release:', updatedRelease);
-                    console.log('Release updated');
-                    res.send({ error: false, message: "Release Updated" });
-                })
-                .catch(err => {
-                    console.error('An error occurred while updating the release:', err);
-                    res.status(500).json({ message: err.message });
-                });
+            const updatedRelease = await Release.findOneAndUpdate(
+                { email: email },
+                { $set: updateData },
+                { new: true }
+            );
+            console.log('Updated Release:', updatedRelease);
+            console.log('Release updated');
+            res.send({ error: false, message: "Release Updated", updatedRelease });
+        } else {
+            res.status(400).json({ message: "Invalid release type" });
         }
-
     } catch (error) {
         console.error('An error occurred:', error);
         res.status(404).json({ message: error.message });
     }
 });
+
 
 
 
