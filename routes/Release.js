@@ -43,13 +43,13 @@ router.post("/create-release", async (req, res) => {
         const { 
             email, release_type, artist_name, language, 
             primary_genre, secondary_genre, release_time, 
-            label_name, recording_location, upc_ean, 
+            label_name, recording_location, song_title, explicitLyrics, releaseDate, upc_ean, 
             listenerTimeZone, generalTimeZone, soldWorldwide 
         } = req.body;
 
         if (!email || !release_type || !artist_name || !language || 
             !primary_genre || !secondary_genre || !release_time || 
-            !label_name || !recording_location || !upc_ean || 
+            !label_name || !song_title || !explicitLyrics || !releaseDate || !recording_location || !upc_ean || 
             !listenerTimeZone || !generalTimeZone || !soldWorldwide) {
             return res.status(400).send({ message: "All fields are required" });
         }
@@ -68,9 +68,11 @@ router.post("/create-release", async (req, res) => {
             upc_ean,
             listenerTimeZone, 
             generalTimeZone,
+            song_title,
+            explicitLyrics,
+            releaseDate,
             soldWorldwide,
             social_platform: null,
-            song: null,
             song_writer: null,
             copyright_ownership: null,
             copyright_ownership_permissions: null,

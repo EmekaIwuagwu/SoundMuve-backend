@@ -86,7 +86,15 @@ const releaseSchema = new mongoose.Schema({
         type: String,
         max: 255,
     },
-    song: {
+    song_title: {
+        type: String,
+        max: 255,
+    },
+    explicitLyrics: {
+        type: String,
+        max: 255,
+    },
+    releaseDate: {
         type: String,
         max: 255,
     },
