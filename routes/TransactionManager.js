@@ -16,7 +16,6 @@ cloudinary.config({
     api_secret: process.env.API_SECRET
 });
 
-
 router.get("/wallet-transfer", async (req, res) => {
     try {
         // Check for authorization token
@@ -185,7 +184,6 @@ router.get('/check-transactions', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
-
 
 const fetchUserBalance = async (email) => {
     const user = await User.findOne({ email: email });
