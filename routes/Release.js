@@ -40,14 +40,18 @@ router.post("/create-release", async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        const {
-            email, release_type, artist_name, language, primary_genre, secondary_genre,
-            release_time, label_name, recording_location, upc_ean, listenerTimeZone,
-            generalTimeZone, soldWorldwide
+        const { 
+            email, release_type, artist_name, language, 
+            primary_genre, secondary_genre, release_time, 
+            label_name, recording_location, upc_ean, 
+            listenerTimeZone, generalTimeZone, soldWorldwide 
         } = req.body;
 
-        if (!email || !release_type || !artist_name || !language || !primary_genre || !secondary_genre || !release_time || !label_name || !recording_location || !upc_ean || !listenerTimeZone || !generalTimeZone || !soldWorldwide) {
-            return res.status(400).json({ message: "All fields are required" });
+        if (!email || !release_type || !artist_name || !language || 
+            !primary_genre || !secondary_genre || !release_time || 
+            !label_name || !recording_location || !upc_ean || 
+            !listenerTimeZone || !generalTimeZone || !soldWorldwide) {
+            return res.status(400).send({ message: "All fields are required" });
         }
 
         // Create new release
@@ -60,11 +64,11 @@ router.post("/create-release", async (req, res) => {
             secondary_genre,
             release_time,
             label_name,
-            listenerTimeZone,
-            generalTimeZone,
-            soldWorldwide,
             recording_location,
             upc_ean,
+            listenerTimeZone, 
+            generalTimeZone,
+            soldWorldwide,
             social_platform: null,
             song: null,
             song_writer: null,
@@ -80,12 +84,11 @@ router.post("/create-release", async (req, res) => {
         });
 
         const new_release = await release.save();
-        res.status(201).json({ message: "Release Saved", new_release });
+        res.send({ message: "Release Saved", new_release });
     } catch (err) {
-        res.status(500).json({ message: "Server error", error: err.message });
+        res.status(500).send({ message: "Server error", error: err.message });
     }
 });
-
 
 router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }, { name: 'cover_photo', maxCount: 1 }]), async (req, res) => {
     try {
