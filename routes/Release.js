@@ -40,12 +40,17 @@ router.post("/create-release", async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        const { email, release_type, artist_name, language, primary_genre, secondary_genre, release_time, label_name, recording_location, upc_ean , listenerTimeZone, generalTimeZone, soldWorldwide} = req.body;
+        const {
+            email, release_type, artist_name, language, primary_genre, secondary_genre,
+            release_time, label_name, recording_location, upc_ean, listenerTimeZone,
+            generalTimeZone, soldWorldwide
+        } = req.body;
+
         if (!email || !release_type || !artist_name || !language || !primary_genre || !secondary_genre || !release_time || !label_name || !recording_location || !upc_ean || !listenerTimeZone || !generalTimeZone || !soldWorldwide) {
-            return res.status(400).send({ message: "All fields are required" });
+            return res.status(400).json({ message: "All fields are required" });
         }
 
-        // Create new user
+        // Create new release
         const release = new Release({
             email,
             release_type,
@@ -55,7 +60,7 @@ router.post("/create-release", async (req, res) => {
             secondary_genre,
             release_time,
             label_name,
-            listenerTimeZone, 
+            listenerTimeZone,
             generalTimeZone,
             soldWorldwide,
             recording_location,
@@ -64,20 +69,20 @@ router.post("/create-release", async (req, res) => {
             song: null,
             song_writer: null,
             copyright_ownership: null,
-            copyright_ownership_permissions : null,
-            store : null,
-            tikTokClipStartTime : null,
+            copyright_ownership_permissions: null,
+            store: null,
+            tikTokClipStartTime: null,
             isrc_number: null,
             language_lyrics: null,
             lyrics: null,
-            mp3_url : null,
-            song_cover : null
+            mp3_url: null,
+            song_cover: null
         });
 
         const new_release = await release.save();
-        res.send({ message: "Release Saved", new_release });
+        res.status(201).json({ message: "Release Saved", new_release });
     } catch (err) {
-        res.status(500).send({ message: "Server error", error: err.message });
+        res.status(500).json({ message: "Server error", error: err.message });
     }
 });
 
