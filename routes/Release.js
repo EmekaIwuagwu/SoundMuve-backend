@@ -166,9 +166,6 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
 });
 
 
-
-
-
 router.get("/getReleaseByEmail/:email", async (req, res) => {
     try {
         if (

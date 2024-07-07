@@ -12,6 +12,8 @@ const auth = require("./routes/auth");
 const newsLetter = require("./routes/NewsLetter");
 const release = require("./routes/Release");
 const transactions = require("./routes/TransactionManager");
+const albums = require("./routes/Album");
+const payouts = require("./routes/Payouts");
 
 app.use(cors())
 
@@ -47,8 +49,10 @@ connectDB();
 // Routes
 app.use("/api/auth", auth);
 app.use("/api/newsLetter", newsLetter);
-app.use("/api/Release",release)
-app.use("/api/wallet",transactions)
+app.use("/api/Release",release);
+app.use("/api/wallet",transactions);
+app.use("/api/Album",albums);
+app.use("/api/payouts",payouts);
 
 app.get("/", function (req, res) {
   res.json({ homeresponse: "Welcome" });
