@@ -312,5 +312,23 @@ router.put('/updateAlbumByEmail/:id', checkToken, async (req, res) => {
     }
 });
 
+router.delete('/delete-album/:id', checkToken, async (req, res) => {
+    const albumId = req.params.id;
+    const email = req.body.email;
+
+    try {
+        const album = await Album.findOneAndDelete({ _id: albumId, email: email });
+
+        if (!album) {
+            return res.status(404).json({ message: 'Album not found or email mismatch' });
+        }
+
+        res.json({ message: 'Album deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error', error: err });
+    }
+});
+
 // Export the router
 module.exports = router;
