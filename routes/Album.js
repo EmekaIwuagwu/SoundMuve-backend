@@ -176,8 +176,12 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
         // Upload mp3 file to Cloudinary
         const result = await cloudinary.uploader.upload(song_mp3, { resource_type: 'auto' });
 
+        // Ensure song_artists and creative_role are arrays
+        const songArtistsArray = Array.isArray(song_artists) ? song_artists : [song_artists];
+        const creativeRoleArray = Array.isArray(creative_role) ? creative_role : [creative_role];
+
         // Merge song_artists and creative_role
-        const mergedArtistsAndCreattive = [...song_artists, ...creative_role];
+        const mergedArtistsAndCreattive = [...songArtistsArray, ...creativeRoleArray];
 
         // Update album document with Cloudinary secure_url
         const updatedAlbum = await Album.findByIdAndUpdate(
@@ -187,7 +191,7 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
                 song_title,
                 song_writer,
                 song_artists: mergedArtistsAndCreattive,
-                creative_role,
+                creative_role: creativeRoleArray,
                 copyright_ownership,
                 copyright_ownership_permissions,
                 isrc_number,
@@ -208,6 +212,7 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
         res.status(500).json({ message: 'Server error', error: err });
     }
 });
+
 
 // Route to update page 5 of an album (upload jpg)
 router.put('/update-album/:id/page5', checkToken, parserImage.single('song_cover_url'), async (req, res) => {
