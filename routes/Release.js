@@ -115,6 +115,7 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
         const copyright_ownership = req.body.copyright_ownership;
         const copyright_ownership_permissions = req.body.copyright_ownership_permissions;
         const isrc_number = req.body.isrc_number;
+        const status = req.body.status;
         const language_lyrics = req.body.language_lyrics;
         const lyrics = req.body.lyrics;
         const tikTokClipStartTime = req.body.tikTokClipStartTime;
@@ -129,6 +130,7 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
             copyright_ownership: copyright_ownership,
             copyright_ownership_permissions: copyright_ownership_permissions,
             isrc_number: isrc_number,
+            status : status,
             language_lyrics: language_lyrics,
             lyrics: lyrics,
             tikTokClipStartTime: tikTokClipStartTime

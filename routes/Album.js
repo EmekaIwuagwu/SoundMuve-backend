@@ -71,6 +71,7 @@ router.post('/create-album', checkToken, async (req, res) => {
         copyright_ownership = null,
         copyright_ownership_permissions = null,
         isrc_number = null,
+        status = null,
         language_of_lyrics = null,
         language_of_lyrics_optional = null,
         ticktokClipStartTime = null,
@@ -100,6 +101,7 @@ router.post('/create-album', checkToken, async (req, res) => {
         copyright_ownership,
         copyright_ownership_permissions,
         isrc_number,
+        status,
         language_of_lyrics,
         language_of_lyrics_optional,
         ticktokClipStartTime,
@@ -148,7 +150,6 @@ router.put('/update-album/:id/page3', checkToken, async (req, res) => {
     }
 });
 
-// Route to update page 4 of an album (upload mp3)
 router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), async (req, res) => {
     const {
         song_title,
@@ -173,6 +174,9 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
         // Upload mp3 file to Cloudinary
         const result = await cloudinary.uploader.upload(song_mp3, { resource_type: 'auto' });
 
+        // Merge song_artists and creattive_name
+        const mergedArtistsAndCreattive = [...song_artists, ...creattive_name];
+
         // Update album document with Cloudinary secure_url
         const updatedAlbum = await Album.findByIdAndUpdate(
             req.params.id,
@@ -180,7 +184,7 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
                 song_mp3: result.secure_url, // Update with Cloudinary secure_url
                 song_title,
                 song_writer,
-                song_artists,
+                song_artists: mergedArtistsAndCreattive,
                 creattive_name,
                 copyright_ownership,
                 copyright_ownership_permissions,
@@ -202,7 +206,6 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
         res.status(500).json({ message: 'Server error', error: err });
     }
 });
-
 
 // Route to update page 5 of an album (upload jpg)
 router.put('/update-album/:id/page5', checkToken, parserImage.single('song_cover_url'), async (req, res) => {
@@ -232,6 +235,74 @@ router.put('/update-album/:id/page5', checkToken, parserImage.single('song_cover
     }
 });
 
+// Route to get albums by email
+router.get('/albums', checkToken, async (req, res) => {
+    const { email } = req.query;
+
+    try {
+        // If an email is provided, filter albums by that email
+        const query = email ? { email } : {};
+        const albums = await Album.find(query);
+        res.json(albums);
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err });
+    }
+});
+
+router.put('/update-album/:id', checkToken, async (req, res) => {
+    const { email } = req.body;
+    const { id } = req.params;
+
+    // Extract the fields to be updated from the request body
+    const updateData = {
+        album_title: req.body.album_title,
+        artist_name: req.body.artist_name,
+        language: req.body.language,
+        primary_genre: req.body.primary_genre,
+        secondary_genre: req.body.secondary_genre,
+        release_date: req.body.release_date,
+        release_time: req.body.release_time,
+        listenerTimeZone: req.body.listenerTimeZone,
+        otherTimeZone: req.body.otherTimeZone,
+        label_name: req.body.label_name,
+        soldWorldwide: req.body.soldWorldwide,
+        recording_location: req.body.recording_location,
+        upc_ean: req.body.upc_ean,
+        store: req.body.store,
+        social_platform: req.body.social_platform,
+        song_mp3: req.body.song_mp3,
+        song_title: req.body.song_title,
+        song_writer: req.body.song_writer,
+        song_artists: req.body.song_artists,
+        creattive_name: req.body.creattive_name,
+        roles: req.body.roles,
+        copyright_ownership: req.body.copyright_ownership,
+        copyright_ownership_permissions: req.body.copyright_ownership_permissions,
+        isrc_number: req.body.isrc_number,
+        language_of_lyrics: req.body.language_of_lyrics,
+        language_of_lyrics_optional: req.body.language_of_lyrics_optional,
+        ticktokClipStartTime: req.body.ticktokClipStartTime,
+        song_url: req.body.song_url,
+        status: req.body.status,
+        song_cover_url: req.body.song_cover_url,
+    };
+
+    try {
+        const updatedAlbum = await Album.findOneAndUpdate(
+            { email, _id: id },
+            { $set: updateData },
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedAlbum) {
+            return res.status(404).json({ message: 'Album not found' });
+        }
+
+        res.json({ message: 'Update successful', updatedAlbum });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err });
+    }
+});
 
 // Export the router
 module.exports = router;

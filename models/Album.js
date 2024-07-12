@@ -146,6 +146,11 @@ const albumSchema = new mongoose.Schema({
         default: null,
         max: 255,
     },
+    status: {
+        type: String,
+        default: null,
+        max: 255,
+    },
     song_cover_url: {
         type: String,
         default: null,

@@ -130,6 +130,10 @@ const releaseSchema = new mongoose.Schema({
         type: String,
         max: 255,
     },
+    status: {
+        type: String,
+        max: 255,
+    },
     created_at: {
         type: Date,
         default: Date.now(),
