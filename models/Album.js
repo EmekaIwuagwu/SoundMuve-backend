@@ -134,7 +134,7 @@ const albumSchema = new mongoose.Schema({
     lyrics: {
         type: String,
         default: null,
-        max: 255,
+        max: 255050,
     },
     explicitLyrics: {
         type: String,
