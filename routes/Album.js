@@ -278,7 +278,7 @@ router.put('/updateAlbumByEmail/:id', checkToken, async (req, res) => {
         song_artists: req.body.song_artists,
         creative_role: req.body.creative_role,
         roles: req.body.roles,
-        explicitLyrics : explicitLyrics,
+        explicitLyrics : req.body.explicitLyrics,
         copyright_ownership: req.body.copyright_ownership,
         copyright_ownership_permissions: req.body.copyright_ownership_permissions,
         isrc_number: req.body.isrc_number,
