@@ -66,14 +66,15 @@ router.post('/create-album', checkToken, async (req, res) => {
         song_title = null,
         song_writer = null,
         song_artists = null,
-        creattive_name = null,
+        creative_role = null,
         roles = null,
+        explicitLyrics = null,
         copyright_ownership = null,
         copyright_ownership_permissions = null,
         isrc_number = null,
         status = null,
         language_of_lyrics = null,
-        language_of_lyrics_optional = null,
+        lyrics = null,
         ticktokClipStartTime = null,
         song_url = null,
         song_cover_url = null
@@ -96,14 +97,15 @@ router.post('/create-album', checkToken, async (req, res) => {
         song_title,
         song_writer,
         song_artists,
-        creattive_name,
+        creative_role,
+        explicitLyrics,
         roles,
         copyright_ownership,
         copyright_ownership_permissions,
         isrc_number,
         status,
         language_of_lyrics,
-        language_of_lyrics_optional,
+        lyrics,
         ticktokClipStartTime,
         song_url,
         song_cover_url
@@ -155,12 +157,12 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
         song_title,
         song_writer,
         song_artists,
-        creattive_name,
+        creative_role,
         copyright_ownership,
         copyright_ownership_permissions,
         isrc_number,
         language_of_lyrics,
-        language_of_lyrics_optional,
+        lyrics,
         ticktokClipStartTime,
     } = req.body;
 
@@ -174,8 +176,8 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
         // Upload mp3 file to Cloudinary
         const result = await cloudinary.uploader.upload(song_mp3, { resource_type: 'auto' });
 
-        // Merge song_artists and creattive_name
-        const mergedArtistsAndCreattive = [...song_artists, ...creattive_name];
+        // Merge song_artists and creative_role
+        const mergedArtistsAndCreattive = [...song_artists, ...creative_role];
 
         // Update album document with Cloudinary secure_url
         const updatedAlbum = await Album.findByIdAndUpdate(
@@ -185,12 +187,12 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
                 song_title,
                 song_writer,
                 song_artists: mergedArtistsAndCreattive,
-                creattive_name,
+                creative_role,
                 copyright_ownership,
                 copyright_ownership_permissions,
                 isrc_number,
                 language_of_lyrics,
-                language_of_lyrics_optional,
+                lyrics,
                 ticktokClipStartTime,
             },
             { new: true } // Return the updated document
@@ -274,13 +276,14 @@ router.put('/updateAlbumByEmail/:id', checkToken, async (req, res) => {
         song_title: req.body.song_title,
         song_writer: req.body.song_writer,
         song_artists: req.body.song_artists,
-        creattive_name: req.body.creattive_name,
+        creative_role: req.body.creative_role,
         roles: req.body.roles,
+        explicitLyrics : explicitLyrics,
         copyright_ownership: req.body.copyright_ownership,
         copyright_ownership_permissions: req.body.copyright_ownership_permissions,
         isrc_number: req.body.isrc_number,
         language_of_lyrics: req.body.language_of_lyrics,
-        language_of_lyrics_optional: req.body.language_of_lyrics_optional,
+        lyrics: req.body.lyrics,
         ticktokClipStartTime: req.body.ticktokClipStartTime,
         song_url: req.body.song_url,
         status: req.body.status,

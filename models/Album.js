@@ -101,7 +101,7 @@ const albumSchema = new mongoose.Schema({
         default: null,
         max: 255,
     },
-    creattive_name: {
+    creative_role: {
         type: [String],
         default: null,
         max: 255,
@@ -131,7 +131,12 @@ const albumSchema = new mongoose.Schema({
         default: null,
         max: 255,
     },
-    language_of_lyrics_optional: {
+    lyrics: {
+        type: String,
+        default: null,
+        max: 255,
+    },
+    explicitLyrics: {
         type: String,
         default: null,
         max: 255,
