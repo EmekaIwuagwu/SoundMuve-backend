@@ -249,7 +249,7 @@ router.get('/albums', checkToken, async (req, res) => {
     }
 });
 
-router.put('/update-album/:id', checkToken, async (req, res) => {
+router.put('/updateAlbumByEmail/:id', checkToken, async (req, res) => {
     const { email } = req.body;
     const { id } = req.params;
 
