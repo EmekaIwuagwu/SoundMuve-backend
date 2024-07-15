@@ -23,6 +23,8 @@ const storageMp3 = new CloudinaryStorage({
     },
 });
 
+const upload = multer({ storage: storageMp3 });
+
 const storageImage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
@@ -32,7 +34,6 @@ const storageImage = new CloudinaryStorage({
     }
 });
 
-const upload = multer({ storage: storageMp3 });
 const parserImage = multer({ storage: storageImage });
 
 // Middleware function to check for authorization token
@@ -166,11 +167,12 @@ router.put('/update-album/:id/page4', checkToken, upload.array('song_mp3', 10), 
         ticktokClipStartTime,
     } = req.body;
 
-    if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: 'No mp3 files uploaded' });
-    }
-
     try {
+        // Check if files were uploaded
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'No mp3 files uploaded' });
+        }
+
         // Get the secure URLs of the uploaded files from Cloudinary
         const songMp3Urls = req.files.map(file => file.path);
 
@@ -196,14 +198,18 @@ router.put('/update-album/:id/page4', checkToken, upload.array('song_mp3', 10), 
             { new: true } // Return the updated document
         );
 
+        // Check if album was found
         if (!updatedAlbum) {
             return res.status(404).json({ message: 'Album not found' });
         }
 
+        // Log and send response
+        console.log({ message: 'Update successful', updatedAlbum });
         res.json({ message: 'Update successful', updatedAlbum });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error', error: err });
+        // Log and send error response
+        console.error('Error in updating album:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 
