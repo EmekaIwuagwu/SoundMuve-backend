@@ -82,7 +82,7 @@ const albumSchema = new mongoose.Schema({
         max: 255,
     },
     song_mp3: {
-        type: String,
+        type: [String],
         default: null,
         max: 255,
     },

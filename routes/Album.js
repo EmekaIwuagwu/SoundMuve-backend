@@ -152,7 +152,7 @@ router.put('/update-album/:id/page3', checkToken, async (req, res) => {
     }
 });
 
-router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), async (req, res) => {
+router.put('/update-album/:id/page4', checkToken, parserMp3.array('song_mp3', 10), async (req, res) => {
     const {
         song_title,
         song_writer,
@@ -166,31 +166,29 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.single('song_mp3'), 
         ticktokClipStartTime,
     } = req.body;
 
-    const song_mp3 = req.file ? req.file.path : null;
-
-    if (!song_mp3) {
-        return res.status(400).json({ message: 'No mp3 file uploaded' });
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: 'No mp3 files uploaded' });
     }
 
     try {
-        // Upload mp3 file to Cloudinary
-        const result = await cloudinary.uploader.upload(song_mp3, { resource_type: 'auto' });
+        // Get the secure URLs of the uploaded files
+        const songMp3Urls = req.files.map(file => file.path);
 
         // Ensure song_artists and creative_role are arrays
         const songArtistsArray = Array.isArray(song_artists) ? song_artists : [song_artists];
         const creativeRoleArray = Array.isArray(creative_role) ? creative_role : [creative_role];
 
         // Merge song_artists and creative_role
-        const mergedArtistsAndCreattive = [...songArtistsArray, ...creativeRoleArray];
+        const mergedArtistsAndCreative = [...songArtistsArray, ...creativeRoleArray];
 
-        // Update album document with Cloudinary secure_url
+        // Update album document with Cloudinary secure URLs
         const updatedAlbum = await Album.findByIdAndUpdate(
             req.params.id,
             {
-                song_mp3: result.secure_url, // Update with Cloudinary secure_url
+                song_mp3: songMp3Urls, // Update with Cloudinary secure URLs
                 song_title,
                 song_writer,
-                song_artists: mergedArtistsAndCreattive,
+                song_artists: mergedArtistsAndCreative,
                 creative_role: creativeRoleArray,
                 copyright_ownership,
                 copyright_ownership_permissions,
