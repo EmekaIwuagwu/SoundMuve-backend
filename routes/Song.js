@@ -71,7 +71,6 @@ router.put('/albums/:id/page4', parser.array('song_mp3', 10), async (req, res) =
 
 router.post('/albums', async (req, res) => {
     try {
-        const { id } = req.params;
         const { 
             email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time, 
             listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store, 
@@ -79,34 +78,17 @@ router.post('/albums', async (req, res) => {
         } = req.body;
 
         const albumData = {
-            email: email || null,
-            album_title: album_title || null,
-            artist_name: artist_name || null,
-            language: language || null,
-            primary_genre: primary_genre || null,
-            secondary_genre: secondary_genre || null,
-            release_date: release_date || null,
-            release_time: release_time || null,
-            listenerTimeZone: listenerTimeZone || null,
-            otherTimeZone: otherTimeZone || null,
-            label_name: label_name || null,
-            soldWorldwide: soldWorldwide || null,
-            recording_location: recording_location || null,
-            upc_ean: upc_ean || null,
-            store: store || null,
-            social_platform: social_platform || null,
-            status: status || null
+            email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time, 
+            listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store, 
+            social_platform, status
         };
 
-        const updatedAlbum = await Album.findByIdAndUpdate(id, albumData, { new: true });
+        const album = new Album(albumData);
+        await album.save();
 
-        if (!updatedAlbum) {
-            return res.status(404).json({ message: 'Album not found' });
-        }
-
-        res.status(200).json(updatedAlbum);
+        res.status(201).json(album);
     } catch (error) {
-        console.error('Error:', error); // Log detailed error
+        console.error('Error:', error);
         res.status(500).json({ message: error.message });
     }
 });
