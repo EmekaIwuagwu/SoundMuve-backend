@@ -17,10 +17,10 @@ cloudinary.config({
 const storageMp3 = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
-        folder: 'albums', // Folder name in Cloudinary
-        allowed_formats: ['mp3'], // Only allow mp3 files
-        resource_type: 'auto' // Automatically determine the resource type (image, video, raw, etc.)
-    }
+        folder: 'uploads', // Cloudinary folder name
+        format: async (req, file) => 'mp3', // Support only mp3 format
+        public_id: (req, file) => Date.now() + '-' + file.originalname,
+    },
 });
 
 const storageImage = new CloudinaryStorage({
@@ -32,7 +32,7 @@ const storageImage = new CloudinaryStorage({
     }
 });
 
-const parserMp3 = multer({ storage: storageMp3 });
+const upload = multer({ storage: storageMp3 });
 const parserImage = multer({ storage: storageImage });
 
 // Middleware function to check for authorization token
@@ -152,7 +152,7 @@ router.put('/update-album/:id/page3', checkToken, async (req, res) => {
     }
 });
 
-router.put('/update-album/:id/page4', checkToken, parserMp3.array('song_mp3', 10), async (req, res) => {
+router.put('/update-album/:id/page4', checkToken, upload.array('song_mp3', 10), async (req, res) => {
     const {
         song_title,
         song_writer,
@@ -171,32 +171,28 @@ router.put('/update-album/:id/page4', checkToken, parserMp3.array('song_mp3', 10
     }
 
     try {
-        // Get the secure URLs of the uploaded files
+        // Get the secure URLs of the uploaded files from Cloudinary
         const songMp3Urls = req.files.map(file => file.path);
 
-        // Ensure song_artists and creative_role are arrays
-        const songArtistsArray = Array.isArray(song_artists) ? song_artists : [song_artists];
-        const creativeRoleArray = Array.isArray(creative_role) ? creative_role : [creative_role];
+        // Create new song documents
+        const newSongs = songMp3Urls.map((mp3Url, index) => ({
+            song_mp3: mp3Url,
+            song_title: Array.isArray(song_title) ? song_title[index] : song_title,
+            song_writer: Array.isArray(song_writer) ? song_writer[index] : song_writer,
+            song_artists: Array.isArray(song_artists) ? song_artists[index] : song_artists,
+            creative_role: Array.isArray(creative_role) ? creative_role[index] : creative_role,
+            copyright_ownership: Array.isArray(copyright_ownership) ? copyright_ownership[index] : copyright_ownership,
+            copyright_ownership_permissions: Array.isArray(copyright_ownership_permissions) ? copyright_ownership_permissions[index] : copyright_ownership_permissions,
+            isrc_number: Array.isArray(isrc_number) ? isrc_number[index] : isrc_number,
+            language_of_lyrics: Array.isArray(language_of_lyrics) ? language_of_lyrics[index] : language_of_lyrics,
+            lyrics: Array.isArray(lyrics) ? lyrics[index] : lyrics,
+            ticktokClipStartTime: Array.isArray(ticktokClipStartTime) ? ticktokClipStartTime[index] : ticktokClipStartTime
+        }));
 
-        // Merge song_artists and creative_role
-        const mergedArtistsAndCreative = [...songArtistsArray, ...creativeRoleArray];
-
-        // Update album document with Cloudinary secure URLs
+        // Update album document with the new songs
         const updatedAlbum = await Album.findByIdAndUpdate(
             req.params.id,
-            {
-                song_mp3: songMp3Urls, // Update with Cloudinary secure URLs
-                song_title,
-                song_writer,
-                song_artists: mergedArtistsAndCreative,
-                creative_role: creativeRoleArray,
-                copyright_ownership,
-                copyright_ownership_permissions,
-                isrc_number,
-                language_of_lyrics,
-                lyrics,
-                ticktokClipStartTime,
-            },
+            { $push: { songs: { $each: newSongs } } },
             { new: true } // Return the updated document
         );
 
