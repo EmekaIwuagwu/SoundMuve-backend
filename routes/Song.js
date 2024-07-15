@@ -69,7 +69,7 @@ router.put('/albums/:id/page4', parser.array('song_mp3', 10), async (req, res) =
 });
 
 
-router.post('/albums/:id/page1', async (req, res) => {
+router.post('/albums', async (req, res) => {
     try {
         const { id } = req.params;
         const { 
