@@ -35,7 +35,7 @@ const jpegstorage = new CloudinaryStorage({
 const Imgparser = multer({ storage: jpegstorage });
 
 // Endpoint to upload songs to Cloudinary and save song details in MongoDB
-router.put('/upload-songs', parser.array('song_mp3', 10), async (req, res) => {
+router.put('/albums/:id/page4', parser.array('song_mp3', 10), async (req, res) => {
     try {
         const { email, song_title, song_writer, creative_role, copyright_ownership, copyright_ownership_permissions, isrc_number, language_of_lyrics, lyrics, ticktokClipStartTime } = req.body;
 
@@ -69,7 +69,7 @@ router.put('/upload-songs', parser.array('song_mp3', 10), async (req, res) => {
 });
 
 
-router.put('/albums', Imgparser.single('song_cover_url'), async (req, res) => {
+router.put('/albums/:id/page1', async (req, res) => {
     try {
         const { 
             email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time, 
@@ -77,12 +77,10 @@ router.put('/albums', Imgparser.single('song_cover_url'), async (req, res) => {
             social_platform, status 
         } = req.body;
 
-        const song_cover_url = req.file ? req.file.path : null;
-
         const albumData = {
             email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time, 
             listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store, 
-            social_platform, status, song_cover_url
+            social_platform, status
         };
 
         const album = new Album(albumData);
@@ -95,8 +93,68 @@ router.put('/albums', Imgparser.single('song_cover_url'), async (req, res) => {
     }
 });
 
-module.exports = router;
+router.put('/albums/:id/page2', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { label_name, recording_location, soldWorldwide, upc_ean } = req.body;
 
+        const updatedAlbum = await Album.findByIdAndUpdate(
+            id,
+            {
+                label_name: label_name || null,
+                recording_location: recording_location || null,
+                soldWorldwide: soldWorldwide || null,
+                upc_ean: upc_ean || null,
+            },
+            { new: true }
+        );
+
+        res.json(updatedAlbum);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// PUT endpoint for page 3
+router.put('/albums/:id/page3', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { store, social_platform } = req.body;
+
+        const updatedAlbum = await Album.findByIdAndUpdate(
+            id,
+            {
+                store: store || null,
+                social_platform: social_platform || null,
+            },
+            { new: true }
+        );
+
+        res.json(updatedAlbum);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// PUT endpoint for page 5 (upload cover image to Cloudinary)
+router.put('/albums/:id/page5', Imgparser.single('song_cover_url'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const song_cover_url = req.file ? req.file.path : null;
+
+        const updatedAlbum = await Album.findByIdAndUpdate(
+            id,
+            {
+                song_cover_url: song_cover_url || null,
+            },
+            { new: true }
+        );
+
+        res.json(updatedAlbum);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 router.get('/albums-songs-by-email/:email', async (req, res) => {
     try {
