@@ -12,8 +12,9 @@ const auth = require("./routes/auth");
 const newsLetter = require("./routes/NewsLetter");
 const release = require("./routes/Release");
 const transactions = require("./routes/TransactionManager");
-const albums = require("./routes/Album");
+//const albums = require("./routes/Album");
 const payouts = require("./routes/Payouts");
+const songs = require("./routes/Song");
 
 app.use(cors())
 
@@ -51,7 +52,8 @@ app.use("/api/auth", auth);
 app.use("/api/newsLetter", newsLetter);
 app.use("/api/Release",release);
 app.use("/api/wallet",transactions);
-app.use("/api/Album",albums);
+//app.use("/api/Album",albums);
+app.use("/api/songs",songs);
 app.use("/api/payouts",payouts);
 
 app.get("/", function (req, res) {
