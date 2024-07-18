@@ -11,7 +11,7 @@ cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.API_KEY,
     api_secret: process.env.API_SECRET
-  });
+});
 
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
@@ -24,62 +24,74 @@ const storage = new CloudinaryStorage({
 
 const parser = multer({ storage: storage });
 
-const jpegstorage = new CloudinaryStorage({
+const jpegStorage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'album_covers',
-        allowedFormats: ['jpg', 'jpeg', 'png'],
+        allowed_formats: ['jpg', 'jpeg', 'png'],
     },
 });
 
-const Imgparser = multer({ storage: jpegstorage });
+const imgParser = multer({ storage: jpegStorage });
 
 // Endpoint to upload songs to Cloudinary and save song details in MongoDB
-router.put('/albums/:id/page4', parser.array('song_mp3', 10), async (req, res) => {
+router.post('/page4', parser.single('song_mp3'), async (req, res) => {
+    const {
+      email,
+      song_title,
+      song_writer,
+      creative_role,
+      copyright_ownership,
+      copyright_ownership_permissions,
+      isrc_number,
+      language_of_lyrics,
+      lyrics,
+      ticktokClipStartTime
+    } = req.body;
+  
     try {
-        const { email, song_title, song_writer, creative_role, copyright_ownership, copyright_ownership_permissions, isrc_number, language_of_lyrics, lyrics, ticktokClipStartTime } = req.body;
-
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: 'No files uploaded.' });
-        }
-
-        // Map through the uploaded files to get the secure URLs
-        const songs = req.files.map(file => ({
-            email,
-            song_mp3: file.path, // Ensure file.path is used here
-            song_title,
-            song_writer: JSON.parse(song_writer), // Assuming song_writer is sent as a JSON string array
-            creative_role: JSON.parse(creative_role), // Assuming creative_role is sent as a JSON string array
-            copyright_ownership,
-            copyright_ownership_permissions,
-            isrc_number,
-            language_of_lyrics,
-            lyrics,
-            ticktokClipStartTime,
-        }));
-
-        // Save each song to the database
-        const savedSongs = await Song.insertMany(songs);
-
-        res.status(201).json(savedSongs);
+      if (!req.file) {
+        return res.status(400).send({ message: 'No file uploaded' });
+      }
+  
+      // File upload result
+      const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' });
+  
+      // Create a new song document
+      const newSong = new Song({
+        email,
+        song_mp3: result.secure_url,
+        song_title,
+        song_writer: song_writer.split(','),
+        creative_role: creative_role.split(','),
+        copyright_ownership,
+        copyright_ownership_permissions,
+        isrc_number,
+        language_of_lyrics,
+        lyrics,
+        ticktokClipStartTime
+      });
+  
+      // Save song document to MongoDB
+      const savedSong = await newSong.save();
+      res.status(200).send({ message: 'Song uploaded and saved successfully', song: savedSong });
     } catch (error) {
-        console.error('Error:', error); // Log detailed error
-        res.status(500).json({ message: error.message });
+      console.error('Error:', error); // Log error for debugging
+      res.status(500).send({ message: 'Server error', error });
     }
-});
-
+  });
 
 router.post('/albums', async (req, res) => {
     try {
-        const { 
-            email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time, 
-            listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store, 
-            social_platform, status 
+        const {
+            email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time,
+            listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store,
+            social_platform, status
         } = req.body;
 
         const albumData = {
-            email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time, 
-            listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store, 
+            email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time,
+            listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store,
             social_platform, status
         };
 
@@ -137,7 +149,7 @@ router.put('/albums/:id/page3', async (req, res) => {
 });
 
 // PUT endpoint for page 5 (upload cover image to Cloudinary)
-router.put('/albums/:id/page5', Imgparser.single('song_cover_url'), async (req, res) => {
+router.put('/albums/:id/page5', imgParser.single('song_cover_url'), async (req, res) => {
     try {
         const { id } = req.params;
         const song_cover_url = req.file ? req.file.path : null;
