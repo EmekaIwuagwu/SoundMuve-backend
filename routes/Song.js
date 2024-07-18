@@ -54,29 +54,39 @@ router.post('/page4', parser.single('song_mp3'), async (req, res) => {
         return res.status(400).send({ message: 'No file uploaded' });
       }
   
-      // File upload result
-      const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' });
+      // Upload file to Cloudinary
+      cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' }, async (error, result) => {
+        if (error) {
+          console.error('Cloudinary Error:', error); // Log Cloudinary error
+          return res.status(500).send({ message: 'Cloudinary upload failed', error });
+        }
   
-      // Create a new song document
-      const newSong = new Song({
-        email,
-        song_mp3: result.secure_url,
-        song_title,
-        song_writer: song_writer.split(','),
-        creative_role: creative_role.split(','),
-        copyright_ownership,
-        copyright_ownership_permissions,
-        isrc_number,
-        language_of_lyrics,
-        lyrics,
-        ticktokClipStartTime
+        try {
+          // Create a new song document
+          const newSong = new Song({
+            email,
+            song_mp3: result.secure_url,
+            song_title,
+            song_writer: song_writer.split(','),
+            creative_role: creative_role.split(','),
+            copyright_ownership,
+            copyright_ownership_permissions,
+            isrc_number,
+            language_of_lyrics,
+            lyrics,
+            ticktokClipStartTime
+          });
+  
+          // Save song document to MongoDB
+          const savedSong = await newSong.save();
+          res.status(200).send({ message: 'Song uploaded and saved successfully', song: savedSong });
+        } catch (saveError) {
+          console.error('MongoDB Save Error:', saveError); // Log MongoDB save error
+          res.status(500).send({ message: 'Failed to save song', error: saveError });
+        }
       });
-  
-      // Save song document to MongoDB
-      const savedSong = await newSong.save();
-      res.status(200).send({ message: 'Song uploaded and saved successfully', song: savedSong });
     } catch (error) {
-      console.error('Error:', error); // Log error for debugging
+      console.error('Server Error:', error); // Log server error
       res.status(500).send({ message: 'Server error', error });
     }
   });
