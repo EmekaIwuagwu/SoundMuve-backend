@@ -50,6 +50,16 @@ router.post('/page4', parser.single('song_mp3'), async (req, res) => {
     } = req.body;
   
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
+
       if (!req.file) {
         return res.status(400).send({ message: 'No file uploaded' });
       }
@@ -87,6 +97,62 @@ router.post('/page4', parser.single('song_mp3'), async (req, res) => {
       });
     } catch (error) {
       console.error('Server Error:', error); // Log server error
+      res.status(500).send({ message: 'Server error', error });
+    }
+  });
+
+  router.put('/editSong/:id', parser.single('song_mp3'), async (req, res) => {
+    const {
+      email,
+      song_title,
+      song_writer,
+      creative_role,
+      copyright_ownership,
+      copyright_ownership_permissions,
+      isrc_number,
+      language_of_lyrics,
+      lyrics,
+      ticktokClipStartTime
+    } = req.body;
+  
+    try {
+      // Find the existing song document
+      if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+
+      const song = await Song.findById(req.params.id);
+      if (!song) {
+        return res.status(404).send({ message: 'Song not found' });
+      }
+  
+      // Update song information
+      song.email = email || song.email;
+      song.song_title = song_title || song.song_title;
+      song.song_writer = song_writer ? song_writer.split(',') : song.song_writer;
+      song.creative_role = creative_role ? creative_role.split(',') : song.creative_role;
+      song.copyright_ownership = copyright_ownership || song.copyright_ownership;
+      song.copyright_ownership_permissions = copyright_ownership_permissions || song.copyright_ownership_permissions;
+      song.isrc_number = isrc_number || song.isrc_number;
+      song.language_of_lyrics = language_of_lyrics || song.language_of_lyrics;
+      song.lyrics = lyrics || song.lyrics;
+      song.ticktokClipStartTime = ticktokClipStartTime || song.ticktokClipStartTime;
+  
+      if (req.file) {
+        // Upload the new file to Cloudinary if provided
+        const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' });
+        song.song_mp3 = result.secure_url;
+      }
+  
+      // Save the updated song document to MongoDB
+      const updatedSong = await song.save();
+      res.status(200).send({ message: 'Song updated successfully', song: updatedSong });
+    } catch (error) {
+      console.error('Error:', error); // Log error for debugging
       res.status(500).send({ message: 'Server error', error });
     }
   });
