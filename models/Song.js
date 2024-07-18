@@ -4,6 +4,8 @@ const songSchema = new mongoose.Schema({
     email: { type: String, default: null },
     song_mp3: { type: String, default: null },
     song_title: { type: String, default: null },
+    creative_name: { type: String, default: null },
+    album_id: { type: String, default: null },
     song_writer: { type: [String], default: null },
     creative_role: { type: [String], default: null },
     copyright_ownership: { type: String, default: null },
