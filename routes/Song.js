@@ -251,29 +251,37 @@ router.put('/albums/:id/page5', imgParser.single('song_cover_url'), async (req, 
 router.get('/albums-songs-by-email/:email', async (req, res) => {
     try {
         const { email } = req.params;
+        const { album_id } = req.query; // Fetch album_id from query parameters
 
-        // Fetch albums with matching email
-        const albums = await Album.find({ email }).lean();
+        // Fetch albums with matching email and optionally matching album_id
+        let albums;
+        if (album_id) {
+            albums = await Album.find({ email, _id: album_id }).lean();
+        } else {
+            albums = await Album.find({ email }).lean();
+        }
 
         // Fetch songs with matching email
         const songs = await Song.find({ email }).lean();
 
         // Process each album
         const albumsWithSongs = albums.map(album => {
-            const albumSongs = songs.map(song => ({
-                song_mp3: song.song_mp3,
-                song_title: song.song_title,
-                song_writer: song.song_writer,
-                creatives: song.creative_role.map((role, index) => ({
-                    creative_name: song.song_writer[index], // Assuming song_writer and creative_role are parallel arrays
-                    creative_role: role
-                })),
-                copyright_ownership: song.copyright_ownership,
-                isrc_number: song.isrc_number,
-                language_of_lyrics: song.language_of_lyrics,
-                lyrics: song.lyrics,
-                ticktokClipStartTime: song.ticktokClipStartTime
-            }));
+            const albumSongs = songs
+                .filter(song => song.album_id === album._id.toString()) // Filter songs by album_id
+                .map(song => ({
+                    song_mp3: song.song_mp3,
+                    song_title: song.song_title,
+                    song_writer: song.song_writer,
+                    creatives: song.creative_role.map((role, index) => ({
+                        creative_name: song.song_writer[index], // Assuming song_writer and creative_role are parallel arrays
+                        creative_role: role
+                    })),
+                    copyright_ownership: song.copyright_ownership,
+                    isrc_number: song.isrc_number,
+                    language_of_lyrics: song.language_of_lyrics,
+                    lyrics: song.lyrics,
+                    ticktokClipStartTime: song.ticktokClipStartTime
+                }));
 
             return { ...album, songs: albumSongs };
         });
