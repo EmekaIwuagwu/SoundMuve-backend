@@ -20,16 +20,21 @@ router.post('/artists', validateToken, async (req, res) => {
         return res.status(400).send({ message: 'All fields are required' });
     }
 
-    const artist = new ArtistForRecordLabel({
-        artistName,
-        email,
-        phoneNumber,
-        country,
-        recordLabelemail,
-        gender
-    });
-
     try {
+        const existingArtist = await ArtistForRecordLabel.findOne({ email });
+        if (existingArtist) {
+            return res.status(400).send({ message: 'Artist with this email has already been saved' });
+        }
+
+        const artist = new ArtistForRecordLabel({
+            artistName,
+            email,
+            phoneNumber,
+            country,
+            recordLabelemail,
+            gender
+        });
+
         const savedArtist = await artist.save();
         res.status(201).send({
             message: 'Artist saved successfully',
