@@ -38,7 +38,7 @@ router.post('/artists', async (req, res) => {
 });
 
 
-app.get('/artists/songs-count', async (req, res) => {
+router.get('/artists/songs-count', async (req, res) => {
     if (
         !req.headers.authorization ||
         !req.headers.authorization.startsWith("Bearer ") ||
