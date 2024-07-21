@@ -36,21 +36,132 @@ const imgParser = multer({ storage: jpegStorage });
 
 // Endpoint to upload songs to Cloudinary and save song details in MongoDB
 router.post('/page4', parser.single('song_mp3'), async (req, res) => {
+    
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+
     const {
-      email,
-      song_title,
-      song_writer,
-      creative_name,
-      creative_role,
-      copyright_ownership,
-      copyright_ownership_permissions,
-      isrc_number,
-      album_id,
-      language_of_lyrics,
-      lyrics,
-      ticktokClipStartTime
+        email,
+        song_title,
+        song_writer,
+        creative_name,
+        creative_role,
+        copyright_ownership,
+        copyright_ownership_permissions,
+        isrc_number,
+        album_id,
+        language_of_lyrics,
+        lyrics,
+        ticktokClipStartTime
     } = req.body;
-  
+
+    try {
+        if (!req.file) {
+            return res.status(400).send({ message: 'No file uploaded' });
+        }
+
+        // Upload file to Cloudinary
+        cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' }, async (error, result) => {
+            if (error) {
+                console.error('Cloudinary Error:', error); // Log Cloudinary error
+                return res.status(500).send({ message: 'Cloudinary upload failed', error });
+            }
+
+            try {
+                // Create a new song document
+                const newSong = new Song({
+                    email,
+                    song_mp3: result.secure_url,
+                    song_title,
+                    song_writer: song_writer.split(','),
+                    creative_name: creative_name.split(','),
+                    creative_role: creative_role.split(','),
+                    copyright_ownership,
+                    copyright_ownership_permissions,
+                    isrc_number,
+                    album_id,
+                    language_of_lyrics,
+                    lyrics,
+                    ticktokClipStartTime
+                });
+
+                // Save song document to MongoDB
+                const savedSong = await newSong.save();
+                res.status(200).send({ message: 'Song uploaded and saved successfully', song: savedSong });
+            } catch (saveError) {
+                console.error('MongoDB Save Error:', saveError); // Log MongoDB save error
+                res.status(500).send({ message: 'Failed to save song', error: saveError });
+            }
+        });
+    } catch (error) {
+        console.error('Server Error:', error); // Log server error
+        res.status(500).send({ message: 'Server error', error });
+    }
+});
+
+router.put('/editSong/:id', parser.single('song_mp3'), async (req, res) => {
+
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+
+    const {
+        email,
+        song_title,
+        song_writer,
+        creative_role,
+        copyright_ownership,
+        copyright_ownership_permissions,
+        isrc_number,
+        language_of_lyrics,
+        lyrics,
+        ticktokClipStartTime
+    } = req.body;
+
+    try {
+        // Find the existing song document
+        const song = await Song.findById(req.params.id);
+        if (!song) {
+            return res.status(404).send({ message: 'Song not found' });
+        }
+
+        // Update song information
+        song.email = email || song.email;
+        song.song_title = song_title || song.song_title;
+        song.song_writer = song_writer ? song_writer.split(',') : song.song_writer;
+        song.creative_role = creative_role ? creative_role.split(',') : song.creative_role;
+        song.copyright_ownership = copyright_ownership || song.copyright_ownership;
+        song.copyright_ownership_permissions = copyright_ownership_permissions || song.copyright_ownership_permissions;
+        song.isrc_number = isrc_number || song.isrc_number;
+        song.language_of_lyrics = language_of_lyrics || song.language_of_lyrics;
+        song.lyrics = lyrics || song.lyrics;
+        song.ticktokClipStartTime = ticktokClipStartTime || song.ticktokClipStartTime;
+
+        if (req.file) {
+            // Upload the new file to Cloudinary if provided
+            const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' });
+            song.song_mp3 = result.secure_url;
+        }
+
+        // Save the updated song document to MongoDB
+        const updatedSong = await song.save();
+        res.status(200).send({ message: 'Song updated successfully', song: updatedSong });
+    } catch (error) {
+        console.error('Error:', error); // Log error for debugging
+        res.status(500).send({ message: 'Server error', error });
+    }
+});
+
+router.post('/albums', async (req, res) => {
     try {
 
         if (
@@ -61,108 +172,6 @@ router.post('/page4', parser.single('song_mp3'), async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-
-      if (!req.file) {
-        return res.status(400).send({ message: 'No file uploaded' });
-      }
-  
-      // Upload file to Cloudinary
-      cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' }, async (error, result) => {
-        if (error) {
-          console.error('Cloudinary Error:', error); // Log Cloudinary error
-          return res.status(500).send({ message: 'Cloudinary upload failed', error });
-        }
-  
-        try {
-          // Create a new song document
-          const newSong = new Song({
-            email,
-            song_mp3: result.secure_url,
-            song_title,
-            song_writer: song_writer.split(','),
-            creative_name: creative_name.split(','),
-            creative_role: creative_role.split(','),
-            copyright_ownership,
-            copyright_ownership_permissions,
-            isrc_number,
-            album_id,
-            language_of_lyrics,
-            lyrics,
-            ticktokClipStartTime
-          });
-  
-          // Save song document to MongoDB
-          const savedSong = await newSong.save();
-          res.status(200).send({ message: 'Song uploaded and saved successfully', song: savedSong });
-        } catch (saveError) {
-          console.error('MongoDB Save Error:', saveError); // Log MongoDB save error
-          res.status(500).send({ message: 'Failed to save song', error: saveError });
-        }
-      });
-    } catch (error) {
-      console.error('Server Error:', error); // Log server error
-      res.status(500).send({ message: 'Server error', error });
-    }
-  });
-
-  router.put('/editSong/:id', parser.single('song_mp3'), async (req, res) => {
-    const {
-      email,
-      song_title,
-      song_writer,
-      creative_role,
-      copyright_ownership,
-      copyright_ownership_permissions,
-      isrc_number,
-      language_of_lyrics,
-      lyrics,
-      ticktokClipStartTime
-    } = req.body;
-  
-    try {
-      // Find the existing song document
-      if (
-        !req.headers.authorization ||
-        !req.headers.authorization.startsWith("Bearer ") ||
-        !req.headers.authorization.split(" ")[1]
-    ) {
-        return res.status(422).json({ message: "Please Provide Token!" });
-    }
-
-      const song = await Song.findById(req.params.id);
-      if (!song) {
-        return res.status(404).send({ message: 'Song not found' });
-      }
-  
-      // Update song information
-      song.email = email || song.email;
-      song.song_title = song_title || song.song_title;
-      song.song_writer = song_writer ? song_writer.split(',') : song.song_writer;
-      song.creative_role = creative_role ? creative_role.split(',') : song.creative_role;
-      song.copyright_ownership = copyright_ownership || song.copyright_ownership;
-      song.copyright_ownership_permissions = copyright_ownership_permissions || song.copyright_ownership_permissions;
-      song.isrc_number = isrc_number || song.isrc_number;
-      song.language_of_lyrics = language_of_lyrics || song.language_of_lyrics;
-      song.lyrics = lyrics || song.lyrics;
-      song.ticktokClipStartTime = ticktokClipStartTime || song.ticktokClipStartTime;
-  
-      if (req.file) {
-        // Upload the new file to Cloudinary if provided
-        const result = await cloudinary.uploader.upload(req.file.path, { resource_type: 'raw' });
-        song.song_mp3 = result.secure_url;
-      }
-  
-      // Save the updated song document to MongoDB
-      const updatedSong = await song.save();
-      res.status(200).send({ message: 'Song updated successfully', song: updatedSong });
-    } catch (error) {
-      console.error('Error:', error); // Log error for debugging
-      res.status(500).send({ message: 'Server error', error });
-    }
-  });
-
-router.post('/albums', async (req, res) => {
-    try {
         const {
             email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time,
             listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store,
@@ -187,6 +196,15 @@ router.post('/albums', async (req, res) => {
 
 router.put('/albums/:id/page2', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { id } = req.params;
         const { label_name, recording_location, soldWorldwide, upc_ean } = req.body;
 
@@ -210,6 +228,15 @@ router.put('/albums/:id/page2', async (req, res) => {
 // PUT endpoint for page 3
 router.put('/albums/:id/page3', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { id } = req.params;
         const { store, social_platform } = req.body;
 
@@ -231,6 +258,15 @@ router.put('/albums/:id/page3', async (req, res) => {
 // PUT endpoint for page 5 (upload cover image to Cloudinary)
 router.put('/albums/:id/page5', imgParser.single('song_cover_url'), async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { id } = req.params;
         const song_cover_url = req.file ? req.file.path : null;
 
@@ -250,6 +286,15 @@ router.put('/albums/:id/page5', imgParser.single('song_cover_url'), async (req, 
 
 router.get('/albums-songs-by-email/:email', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { email } = req.params;
         const { album_id } = req.query; // Fetch album_id from query parameters
 
@@ -289,6 +334,27 @@ router.get('/albums-songs-by-email/:email', async (req, res) => {
         res.json({ albums: albumsWithSongs });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+});
+
+router.delete('/songs/:id', async (req, res) => {
+    try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
+        const song = await Song.findByIdAndDelete(req.params.id);
+        if (!song) {
+            return res.status(404).send({ message: 'Song not found' });
+        }
+        res.send({ message: 'Song deleted successfully' });
+    } catch (error) {
+        res.status(500).send({ message: error.message });
     }
 });
 
