@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const ArtistForRecordLabel = require('../models/artistForRecordLabel');
+const ArtistForRecordLabel = require('../models/RecordLabelManager');
 const Song = require('../models/Song');
 require('dotenv').config();
 
