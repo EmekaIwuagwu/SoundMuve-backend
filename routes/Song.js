@@ -34,6 +34,15 @@ const jpegStorage = new CloudinaryStorage({
 
 const imgParser = multer({ storage: jpegStorage });
 
+const validateToken = (req, res, next) => {
+    const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+    if (!token) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+    // Token validation logic (e.g., JWT verification) can be added here.
+    next();
+};
+
 // Endpoint to upload songs to Cloudinary and save song details in MongoDB
 router.post('/page4', parser.single('song_mp3'), async (req, res) => {
     
@@ -337,17 +346,8 @@ router.get('/albums-songs-by-email/:email', async (req, res) => {
     }
 });
 
-router.delete('/songs/:id', async (req, res) => {
+router.delete('/songs/:id', validateToken, async (req, res) => {
     try {
-
-        if (
-            !req.headers.authorization ||
-            !req.headers.authorization.startsWith("Bearer ") ||
-            !req.headers.authorization.split(" ")[1]
-        ) {
-            return res.status(422).json({ message: "Please Provide Token!" });
-        }
-
         const song = await Song.findByIdAndDelete(req.params.id);
         if (!song) {
             return res.status(404).send({ message: 'Song not found' });
