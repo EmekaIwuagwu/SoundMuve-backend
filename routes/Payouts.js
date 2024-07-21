@@ -14,7 +14,22 @@ router.post("/local-transfer", async (req, res, next) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        const { account_bank, account_number, email, amount, narration, currency, reference, debit_currency } = req.body;
+        function generateReferenceCode() {
+            const prefix = 'akhlm-pstmnpyt-rfxx';
+            const suffix = '_PMCKDU_';
+        
+            const randomThreeDigits = Math.floor(100 + Math.random() * 900).toString();
+            const randomSevenDigits = Math.floor(1000000 + Math.random() * 9000000).toString();
+            const result = `${prefix}${randomThreeDigits}${suffix}${randomSevenDigits}`;
+        
+            return result;
+        }
+        
+        const ref = generateReferenceCode();
+        const debit_currency = "NGN";
+        const currency = debit_currency;
+
+        const { account_bank, account_number, email, amount, narration } = req.body;
 
         const debit = await User.findOne({ email });
         const my_bal = parseInt(debit.balance);
@@ -36,7 +51,7 @@ router.post("/local-transfer", async (req, res, next) => {
                     amount,
                     narration,
                     currency,
-                    reference,
+                    ref,
                     debit_currency,
                 }),
             });
@@ -443,5 +458,41 @@ const handleKESPayments = async (req, res, next) => {
         next(err);
     }
 };
+
+router.get('/banks/:country', async (req, res) => {
+
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+
+    const { country } = req.params;
+
+    if (!country) {
+        return res.status(400).json({ message: 'Country parameter is required' });
+    }
+
+    try {
+        const response = await fetch(`https://api.flutterwave.com/v3/banks/${country}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${process.env.SECRET_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 module.exports = router;
