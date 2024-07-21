@@ -80,4 +80,24 @@ router.get('/artists/songs-count', validateToken, async (req, res) => {
     }
 });
 
+
+router.get('/songs/count', validateToken, async (req, res) => {
+    const { email } = req.query;
+
+    // Check if email is provided
+    if (!email) {
+        return res.status(400).send({ message: 'Email query parameter is required' });
+    }
+
+    try {
+        // Count the number of songs associated with the provided email
+        const count = await Song.countDocuments({ email });
+
+        // Return the count
+        res.send({ count });
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+});
+
 module.exports = router;
