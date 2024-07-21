@@ -185,6 +185,36 @@ router.post("/us-transfer", async (req, res, next) => {
     }
 });
 
+
+router.post("/euro-payments", async(req, res, next) =>{
+
+    try{
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
+        const { currency } = req.body;
+
+        if(currency == "GBP"){
+            await handleGBPPayments(req, res, next);
+
+        }else if(currency =="EUR"){
+            await handleEURPayment(req, res, next);
+        }
+
+    }catch(err)
+    {
+        next(err);
+    }
+
+});
+
+
 router.post("/afro-payments", async (req, res, next) => {
     try {
         if (
@@ -212,6 +242,68 @@ router.post("/afro-payments", async (req, res, next) => {
         next(err);
     }
 });
+
+const handleEURPayment = async (req, res, next) => {
+    try {
+        const url = "https://api.flutterwave.com/v3/transfers";
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.SECRET_KEY}`,
+            },
+            body: JSON.stringify({
+                amount: req.body.amount,
+                narration: req.body.narration,
+                currency: "EUR",
+                beneficiary_name: req.body.beneficiary_name,
+                meta: req.body.meta,
+            }),
+        });
+
+        const json = await response.json();
+        if (json.status !== "success") {
+            return res.status(500).json({ message: "Transfer failed", data: json });
+        }
+
+        return res.json({ error: false, data: json, message: "Transfer successful" });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// Function to handle GBP payments
+const handleGBPPayments = async (req, res, next) => {
+    try {
+        const url = "https://api.flutterwave.com/v3/transfers";
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${process.env.SECRET_KEY}`,
+            },
+            body: JSON.stringify({
+                amount: req.body.amount,
+                narration: req.body.narration,
+                currency: "GBP",
+                beneficiary_name: req.body.beneficiary_name,
+                meta: req.body.meta,
+            }),
+        });
+
+        const json = await response.json();
+        if (json.status !== "success") {
+            return res.status(500).json({ message: "Transfer failed", data: json });
+        }
+
+        return res.json({ error: false, data: json, message: "Transfer successful" });
+    } catch (err) {
+        next(err);
+    }
+};
+
 
 const handleGHSUGXPayment = async (req, res, next) => {
     try {
@@ -494,5 +586,7 @@ router.get('/banks/:country', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+
 
 module.exports = router;
