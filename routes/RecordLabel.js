@@ -5,7 +5,6 @@ const Song = require('../models/Song');
 require('dotenv').config();
 
 router.post('/artists', async (req, res) => {
-
     if (
         !req.headers.authorization ||
         !req.headers.authorization.startsWith("Bearer ") ||
@@ -20,7 +19,7 @@ router.post('/artists', async (req, res) => {
         return res.status(400).send({ message: 'All fields are required' });
     }
 
-    const artist = new RecordLabel({
+    const artist = new ArtistForRecordLabel({
         artistName,
         email,
         phoneNumber,
@@ -30,8 +29,11 @@ router.post('/artists', async (req, res) => {
     });
 
     try {
-        await artist.save();
-        res.status(201).send({ message: 'Artist saved successfully' });
+        const savedArtist = await artist.save();
+        res.status(201).send({
+            message: 'Artist saved successfully',
+            artist: savedArtist
+        });
     } catch (error) {
         res.status(500).send({ message: error.message });
     }
@@ -59,7 +61,7 @@ router.get('/artists/songs-count', async (req, res) => {
             query.artistName = artistName;
         }
 
-        const artists = await ArtistForRecordLabel.find(query);
+        const artists = await RecordLabel.find(query);
         const results = [];
 
         for (const artist of artists) {
