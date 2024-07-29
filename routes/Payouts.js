@@ -17,14 +17,14 @@ router.post("/local-transfer", async (req, res, next) => {
         function generateReferenceCode() {
             const prefix = 'akhlm-pstmnpyt-rfxx';
             const suffix = '_PMCKDU_';
-        
+
             const randomThreeDigits = Math.floor(100 + Math.random() * 900).toString();
             const randomSevenDigits = Math.floor(1000000 + Math.random() * 9000000).toString();
             const result = `${prefix}${randomThreeDigits}${suffix}${randomSevenDigits}`;
-        
+
             return result;
         }
-        
+
         const ref = generateReferenceCode();
         const debit_currency = "NGN";
         const currency = debit_currency;
@@ -186,9 +186,9 @@ router.post("/us-transfer", async (req, res, next) => {
 });
 
 
-router.post("/euro-payments", async(req, res, next) =>{
+router.post("/euro-payments", async (req, res, next) => {
 
-    try{
+    try {
 
         if (
             !req.headers.authorization ||
@@ -200,15 +200,14 @@ router.post("/euro-payments", async(req, res, next) =>{
 
         const { currency } = req.body;
 
-        if(currency == "GBP"){
+        if (currency == "GBP") {
             await handleGBPPayments(req, res, next);
 
-        }else if(currency =="EUR"){
+        } else if (currency == "EUR") {
             await handleEURPayment(req, res, next);
         }
 
-    }catch(err)
-    {
+    } catch (err) {
         next(err);
     }
 
@@ -587,6 +586,34 @@ router.get('/banks/:country', async (req, res) => {
     }
 });
 
+app.post('/resolve-account', async (req, res) => {
+    const { account_number, account_bank } = req.body;
 
+    if (!account_number || !account_bank) {
+        return res.status(400).json({ error: 'account_number and account_bank are required' });
+    }
+
+    try {
+        const response = await fetch('https://api.flutterwave.com/v3/accounts/resolve', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.SECRET_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ account_number, account_bank }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            return res.status(response.status).json(errorData);
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        console.error('Error resolving account:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 module.exports = router;

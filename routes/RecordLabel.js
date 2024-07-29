@@ -101,33 +101,39 @@ router.get('/songs/count', validateToken, async (req, res) => {
 });
 
 router.get('/artistsList/count', async (req, res) => {
+    const recordLabelemail = req.query.recordLabelemail;
     try {
-        const count = await ArtistForRecordLabel.countDocuments();
-        res.status(200).json({ totalArtists: count });
+        const count = await ArtistForRecordLabel.countDocuments({ recordLabelemail });
+        res.status(200).json({ count });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 });
 
-// Endpoint to search for an artist by name
+// Search for artist endpoint
 router.get('/artistsList/search', async (req, res) => {
+    const recordLabelemail = req.query.recordLabelemail;
+    const artistName = req.query.artistName;
     try {
-        const { name } = req.query;
-        const artists = await ArtistForRecordLabel.find({ artistName: new RegExp(name, 'i') });
-        res.status(200).json(artists);
+        const artist = await ArtistForRecordLabel.findOne({ recordLabelemail, artistName });
+        if (artist) {
+            res.status(200).json(artist);
+        } else {
+            res.status(404).json({ message: 'Artist not found' });
+        }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 });
 
-// Endpoint to get the list of all artists
+// Get list of artists endpoint
 router.get('/artistsList', async (req, res) => {
+    const recordLabelemail = req.query.recordLabelemail;
     try {
-        const artists = await ArtistForRecordLabel.find();
+        const artists = await ArtistForRecordLabel.find({ recordLabelemail });
         res.status(200).json(artists);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: error.message });
     }
 });
-
 module.exports = router;
