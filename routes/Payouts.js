@@ -369,7 +369,7 @@ const handleGHSUGXPayment = async (req, res, next) => {
 
 const handleXAFXOFPayment = async (req, res, next) => {
     try {
-        const { account_bank, account_number, email, amount, narration, currency, reference, debit_currency } = req.body;
+        const { account_bank, account_number, email, amount, narration, currency, reference, debit_currency, beneficiary_name } = req.body;
 
         const debit = await User.findOne({ email });
 
@@ -399,6 +399,7 @@ const handleXAFXOFPayment = async (req, res, next) => {
                     currency,
                     reference,
                     debit_currency,
+                    beneficiary_name
                 }),
             });
 
@@ -432,6 +433,7 @@ const handleXAFXOFPayment = async (req, res, next) => {
         next(err);
     }
 };
+
 
 
 const handleZARPayments = async (req, res, next) => {
