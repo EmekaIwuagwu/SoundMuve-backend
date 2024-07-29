@@ -586,7 +586,7 @@ router.get('/banks/:country', async (req, res) => {
     }
 });
 
-app.post('/resolve-account', async (req, res) => {
+router.post('/resolve-account', async (req, res) => {
     const { account_number, account_bank } = req.body;
 
     if (!account_number || !account_bank) {
