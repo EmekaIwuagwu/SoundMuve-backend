@@ -1,11 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const ArtistForRecordLabel = require('../models/RecordLabelManager');
 const Song = require('../models/Song');
 require('dotenv').config();
 
-// Middleware to validate the token
 const validateToken = (req, res, next) => {
     const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
     if (!token) {
@@ -15,7 +13,7 @@ const validateToken = (req, res, next) => {
     next();
 };
 
-// Create a new artist
+// Add a new artist
 router.post('/artists', validateToken, async (req, res) => {
     const { artistName, email, phoneNumber, country, gender, recordLabelemail } = req.body;
 
@@ -48,7 +46,7 @@ router.post('/artists', validateToken, async (req, res) => {
     }
 });
 
-// Get the number of songs for artists under a specific record label
+// Get count of songs for each artist under a record label
 router.get('/artists/songs-count', validateToken, async (req, res) => {
     const { recordLabelemail, artistName } = req.query;
 
@@ -66,7 +64,7 @@ router.get('/artists/songs-count', validateToken, async (req, res) => {
         const results = [];
 
         for (const artist of artists) {
-            const songsCount = await Song.countDocuments({ creative_name: artist.artistName });
+            const songsCount = await Song.countDocuments({ email: artist.email });
             results.push({
                 artistName: artist.artistName,
                 email: artist.email,
@@ -84,7 +82,7 @@ router.get('/artists/songs-count', validateToken, async (req, res) => {
     }
 });
 
-// Get the count of songs for a specific artist by email
+// Get count of songs for a specific email
 router.get('/songs/count', validateToken, async (req, res) => {
     const { email } = req.query;
 
@@ -100,10 +98,10 @@ router.get('/songs/count', validateToken, async (req, res) => {
     }
 });
 
-// Get the count of artists under a specific record label
+// Get count of artists under a record label
 router.get('/artistsList/count', validateToken, async (req, res) => {
-    const { recordLabelemail } = req.query;
-
+    const recordLabelemail = req.query.recordLabelemail;
+    
     if (!recordLabelemail) {
         return res.status(400).send({ message: 'recordLabelemail query parameter is required' });
     }
@@ -119,9 +117,9 @@ router.get('/artistsList/count', validateToken, async (req, res) => {
 // Search for an artist by record label email and artist name
 router.get('/artistsList/search', validateToken, async (req, res) => {
     const { recordLabelemail, artistName } = req.query;
-
+    
     if (!recordLabelemail || !artistName) {
-        return res.status(400).json({ message: 'recordLabelemail and artistName query parameters are required' });
+        return res.status(400).send({ message: 'recordLabelemail and artistName query parameters are required' });
     }
 
     try {
@@ -136,10 +134,10 @@ router.get('/artistsList/search', validateToken, async (req, res) => {
     }
 });
 
-// Get a list of artists under a specific record label
+// Get list of artists under a record label
 router.get('/artistsList', validateToken, async (req, res) => {
-    const { recordLabelemail } = req.query;
-
+    const recordLabelemail = req.query.recordLabelemail;
+    
     if (!recordLabelemail) {
         return res.status(400).send({ message: 'recordLabelemail query parameter is required' });
     }
