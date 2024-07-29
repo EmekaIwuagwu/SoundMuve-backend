@@ -594,6 +594,15 @@ router.post('/resolve-account', async (req, res) => {
     }
 
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+        
         const response = await fetch('https://api.flutterwave.com/v3/accounts/resolve', {
             method: 'POST',
             headers: {

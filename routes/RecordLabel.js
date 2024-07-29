@@ -103,6 +103,15 @@ router.get('/songs/count', validateToken, async (req, res) => {
 router.get('/artistsList/count', async (req, res) => {
     const recordLabelemail = req.query.recordLabelemail;
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const count = await ArtistForRecordLabel.countDocuments({ recordLabelemail });
         res.status(200).json({ count });
     } catch (error) {
@@ -115,6 +124,14 @@ router.get('/artistsList/search', async (req, res) => {
     const recordLabelemail = req.query.recordLabelemail;
     const artistName = req.query.artistName;
     try {
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const artist = await ArtistForRecordLabel.findOne({ recordLabelemail, artistName });
         if (artist) {
             res.status(200).json(artist);
@@ -130,6 +147,14 @@ router.get('/artistsList/search', async (req, res) => {
 router.get('/artistsList', async (req, res) => {
     const recordLabelemail = req.query.recordLabelemail;
     try {
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const artists = await ArtistForRecordLabel.find({ recordLabelemail });
         res.status(200).json(artists);
     } catch (error) {
