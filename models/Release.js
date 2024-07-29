@@ -79,7 +79,6 @@ const releaseSchema = new mongoose.Schema({
     },
     upc_ean: {
         type: String,
-        required: true,
         max: 255,
     },
     social_platform: {

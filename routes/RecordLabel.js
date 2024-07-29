@@ -100,4 +100,34 @@ router.get('/songs/count', validateToken, async (req, res) => {
     }
 });
 
+router.get('/artistsList/count', async (req, res) => {
+    try {
+        const count = await ArtistForRecordLabel.countDocuments();
+        res.status(200).json({ totalArtists: count });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Endpoint to search for an artist by name
+router.get('/artistsList/search', async (req, res) => {
+    try {
+        const { name } = req.query;
+        const artists = await ArtistForRecordLabel.find({ artistName: new RegExp(name, 'i') });
+        res.status(200).json(artists);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Endpoint to get the list of all artists
+router.get('/artistsList', async (req, res) => {
+    try {
+        const artists = await ArtistForRecordLabel.find();
+        res.status(200).json(artists);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;
