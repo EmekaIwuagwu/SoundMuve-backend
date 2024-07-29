@@ -589,12 +589,13 @@ router.get('/banks/:country', async (req, res) => {
 router.post('/resolve-account', async (req, res) => {
     const { account_number, account_bank } = req.body;
 
+    console.log('Received request body:', req.body);
+
     if (!account_number || !account_bank) {
         return res.status(400).json({ error: 'account_number and account_bank are required' });
     }
 
     try {
-
         if (
             !req.headers.authorization ||
             !req.headers.authorization.startsWith("Bearer ") ||
