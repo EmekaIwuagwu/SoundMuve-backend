@@ -372,6 +372,11 @@ const handleXAFXOFPayment = async (req, res, next) => {
         const { account_bank, account_number, email, amount, narration, currency, reference, debit_currency } = req.body;
 
         const debit = await User.findOne({ email });
+
+        if (!debit) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
         const my_bal = parseInt(debit.balance);
 
         if (my_bal < amount) {
@@ -427,6 +432,7 @@ const handleXAFXOFPayment = async (req, res, next) => {
         next(err);
     }
 };
+
 
 const handleZARPayments = async (req, res, next) => {
     try {
