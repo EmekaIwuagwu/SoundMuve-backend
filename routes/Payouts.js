@@ -234,6 +234,8 @@ router.post("/afro-payments", async (req, res, next) => {
             await handleZARPayments(req, res, next);
         } else if (currency == "KES") {
             await handleKESPayments(req, res, next);
+        }else if (currency == "XOF" || currency =="XAF") {
+            await handleXAFXOFPayment(req, res, next);
         } else {
             res.status(400).json({ message: "Invalid currency" });
         }
@@ -384,6 +386,7 @@ const handleXAFXOFPayment = async (req, res, next) => {
                     Authorization: `Bearer ${process.env.SECRET_KEY}`,
                 },
                 body: JSON.stringify({
+                    email,
                     account_bank,
                     account_number,
                     amount,
