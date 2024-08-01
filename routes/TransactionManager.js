@@ -107,22 +107,22 @@ router.get("/get-transactionby-email/:email", async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        // Fetch user balance
-        const user = await User.findOne({ email: req.params.email }, 'balance');
+        const userEmail = req.params.email;
+
+        // Fetch user by email
+        const user = await User.findOne({ email: userEmail });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Fetch transactions
-        const trans = await Trans.find({ email: req.params.email }).sort({ created_at: -1 });
+        // Fetch transactions by email
+        const transactions = await Trans.find({ email: userEmail }).sort({ created_at: -1 });
 
-        // Combine balance with transactions
-        const response = {
+        // Respond with transactions and balance
+        res.status(200).json({
             balance: user.balance,
-            transactions: trans
-        };
-
-        res.status(200).json(response);
+            transactions: transactions
+        });
     } catch (error) {
         res.status(404).json({ message: error.message });
     }
