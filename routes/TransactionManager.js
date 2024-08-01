@@ -106,8 +106,23 @@ router.get("/get-transactionby-email/:email", async (req, res) => {
         ) {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
+
+        // Fetch user balance
+        const user = await User.findOne({ email: req.params.email }, 'balance');
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Fetch transactions
         const trans = await Trans.find({ email: req.params.email }).sort({ created_at: -1 });
-        res.status(200).json(trans);
+
+        // Combine balance with transactions
+        const response = {
+            balance: user.balance,
+            transactions: trans
+        };
+
+        res.status(200).json(response);
     } catch (error) {
         res.status(404).json({ message: error.message });
     }
@@ -153,6 +168,15 @@ router.get("/get-debit-transaction/:email", async (req, res) => {
 
 router.get('/check-transactions', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         // Extract the start date, end date, and email from the query parameters
         const { startDate, endDate, email } = req.query;
 
@@ -281,6 +305,15 @@ const generateCSV = async (transactions, balance, filePath) => {
 
 router.get('/export-transactions', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { startDate, endDate, email, format } = req.query;
 
         if (!startDate || !endDate || !email || !format) {

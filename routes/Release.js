@@ -49,7 +49,7 @@ router.post("/create-release", async (req, res) => {
 
         if (!email || !release_type || !artist_name || !language || 
             !primary_genre || !secondary_genre || !release_time || 
-            !label_name || !song_title || !explicitLyrics || !releaseDate || !recording_location || !upc_ean || 
+            !label_name || !song_title || !explicitLyrics || !releaseDate || !recording_location || 
             !listenerTimeZone || !generalTimeZone || !soldWorldwide) {
             return res.status(400).send({ message: "All fields are required" });
         }
