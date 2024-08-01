@@ -6,6 +6,16 @@ const releaseSchema = new mongoose.Schema({
         required: true,
         max: 255,
     },
+    appleMusicUrl: {
+        type: String,
+        required: true,
+        max: 255,
+    },
+    spotifyMusicUrl: {
+        type: String,
+        required: true,
+        max: 255,
+    },
     release_type: {
         type: String,
         required: true,

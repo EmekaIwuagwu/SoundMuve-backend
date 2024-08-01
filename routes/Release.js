@@ -41,13 +41,13 @@ router.post("/create-release", async (req, res) => {
         }
 
         const { 
-            email, release_type, artist_name, language, 
+            email, release_type, appleMusicUrl, spotifyMusicUrl, artist_name, language, 
             primary_genre, secondary_genre, release_time, 
             label_name, recording_location, song_title, explicitLyrics, releaseDate, upc_ean, 
             listenerTimeZone, generalTimeZone, soldWorldwide 
         } = req.body;
 
-        if (!email || !release_type || !artist_name || !language || 
+        if (!email || !release_type || !artist_name || !language || !appleMusicUrl || !spotifyMusicUrl ||
             !primary_genre || !secondary_genre || !release_time || 
             !label_name || !song_title || !explicitLyrics || !releaseDate || !recording_location || 
             !listenerTimeZone || !generalTimeZone || !soldWorldwide) {
@@ -63,6 +63,8 @@ router.post("/create-release", async (req, res) => {
             primary_genre,
             secondary_genre,
             release_time,
+            appleMusicUrl,
+            spotifyMusicUrl,
             label_name,
             recording_location,
             upc_ean,

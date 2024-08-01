@@ -2,6 +2,16 @@ const mongoose = require('mongoose');
 
 const albumSchema = new mongoose.Schema({
     email: { type: String, default: null },
+    appleMusicUrl: {
+        type: String,
+        default:null,
+        max: 255,
+    },
+    spotifyMusicUrl: {
+        type: String,
+        required: true,
+        max: 255,
+    },
     album_title: { type: String, default: null },
     artist_name: { type: String, default: null },
     language: { type: String, default: null },
