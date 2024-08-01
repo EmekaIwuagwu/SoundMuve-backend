@@ -23,6 +23,10 @@ const transactionSchema = new mongoose.Schema({
     type: mongoose.SchemaTypes.Number,
     required:true,
   },
+  balance: {
+    type: mongoose.SchemaTypes.Number,
+    required:true,
+  },
   created_at: {
     type: Date,
     default: Date.now(),
