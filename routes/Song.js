@@ -171,7 +171,7 @@ router.put('/editSong/:id', parser.single('song_mp3'), async (req, res) => {
 });
 
 
-router.post('/getAlbumbsByNameAndEmail', async (req, res) => {
+router.get('/getAlbumbsByNameAndEmail', async (req, res) => {
     try {
         if (
             !req.headers.authorization ||
