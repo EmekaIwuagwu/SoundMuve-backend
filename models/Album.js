@@ -9,7 +9,7 @@ const albumSchema = new mongoose.Schema({
     },
     spotifyMusicUrl: {
         type: String,
-        required: true,
+        default:null,
         max: 255,
     },
     album_title: { type: String, default: null },
