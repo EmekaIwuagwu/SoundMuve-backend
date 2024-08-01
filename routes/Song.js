@@ -170,6 +170,36 @@ router.put('/editSong/:id', parser.single('song_mp3'), async (req, res) => {
     }
 });
 
+
+router.post('/getAlbumbsByNameAndEmail', async (req, res) => {
+    try {
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
+        const { artist_name, email } = req.body;
+
+        if (!artist_name || !email) {
+            return res.status(400).json({ message: "Artist name and email are required!" });
+        }
+
+        const albums = await Album.find({ artist_name, email });
+
+        if (!albums || albums.length === 0) {
+            return res.status(404).json({ message: "No albums found for the given artist name and email." });
+        }
+
+        res.status(200).json(albums);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 router.post('/albums', async (req, res) => {
     try {
 

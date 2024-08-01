@@ -115,7 +115,7 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
         const copyright_ownership = req.body.copyright_ownership;
         const copyright_ownership_permissions = req.body.copyright_ownership_permissions;
         const isrc_number = req.body.isrc_number;
-        const status = req.body.status;
+        const status = 'Pending';
         const language_lyrics = req.body.language_lyrics;
         const lyrics = req.body.lyrics;
         const tikTokClipStartTime = req.body.tikTokClipStartTime;
