@@ -74,6 +74,7 @@ router.post("/local-transfer", async (req, res, next) => {
                 narration,
                 credit: 0.0,
                 debit: amount,
+                currency,
                 amount,
                 balance: debit_amt,
             });
@@ -174,6 +175,7 @@ router.post("/us-transfer", async (req, res, next) => {
             narration,
             credit: 0.0,
             debit: amount,
+            currency,
             amount,
             balance: debit_amt,
         });
@@ -357,6 +359,7 @@ const handleGHSUGXPayment = async (req, res, next) => {
                 credit: 0.0,
                 debit: amount,
                 amount,
+                currency,
                 balance: debit_amt,
             });
 
@@ -425,6 +428,7 @@ const handleXAFXOFPayment = async (req, res, next) => {
                 credit: 0.0,
                 debit: amount,
                 amount,
+                currency,
                 balance: debit_amt,
             });
 
@@ -488,6 +492,7 @@ const handleZARPayments = async (req, res, next) => {
                 credit: 0.0,
                 debit: amount,
                 amount,
+                currency,
                 balance: debit_amt,
             });
 
@@ -554,6 +559,7 @@ const handleKESPayments = async (req, res, next) => {
                 credit: 0.0,
                 debit: amount,
                 amount,
+                currency,
                 balance: debit_amt,
             });
 
