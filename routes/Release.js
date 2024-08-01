@@ -168,6 +168,65 @@ router.patch("/update-release", upload.fields([{ name: 'mp3_file', maxCount: 1 }
 });
 
 
+router.put('/checkAndUpdateRelease', async (req, res) => {
+    try {
+        // Check if the required fields are provided
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
+        const {
+            email, release_type, artist_name, language,
+            primary_genre, secondary_genre, release_time,
+            label_name, recording_location, song_title, explicitLyrics, releaseDate, upc_ean,
+            listenerTimeZone, generalTimeZone, soldWorldwide
+        } = req.body;
+
+        if (!email) {
+            return res.status(400).send({ message: "Email is required" });
+        }
+
+        // Find the release by email
+        const release = await Release.findOne({ email });
+
+        if (!release) {
+            return res.status(404).json({ message: "Release not found" });
+        }
+
+        // Check each field and update if it is null
+        const fieldsToUpdate = {
+            release_type, artist_name, language, primary_genre,
+            secondary_genre, release_time, label_name, recording_location,
+            song_title, explicitLyrics, releaseDate, upc_ean,
+            listenerTimeZone, generalTimeZone, soldWorldwide
+        };
+
+        let updateRequired = false;
+
+        for (const [key, value] of Object.entries(fieldsToUpdate)) {
+            if (release[key] === null) {
+                release[key] = value;
+                updateRequired = true;
+            }
+        }
+
+        if (updateRequired) {
+            await release.save();
+            return res.status(200).json({ message: "Release updated successfully", release });
+        } else {
+            return res.status(200).json({ message: "No updates needed", release });
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
 router.get("/getReleaseByEmail/:email", async (req, res) => {
     try {
         if (
