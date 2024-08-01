@@ -218,7 +218,7 @@ router.post('/albums', async (req, res) => {
         } = req.body;
 
         const albumData = {
-            email, album_title, artist_name, language, primary_genre, secondary_genre, release_date, release_time,
+            email, album_title, artist_name, appleMusicUrl, spotifyMusicUrl, language, primary_genre, secondary_genre, release_date, release_time,
             listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store,
             social_platform, status
         };
