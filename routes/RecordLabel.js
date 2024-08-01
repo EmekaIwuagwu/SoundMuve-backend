@@ -3,6 +3,17 @@ const router = express.Router();
 const ArtistForRecordLabel = require('../models/RecordLabelManager');
 const Song = require('../models/Song');
 require('dotenv').config();
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+
+
+const storage = multer.diskStorage({
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' + file.originalname);
+    }
+  });
+  
+  const upload = multer({ storage: storage });
 
 const validateToken = (req, res, next) => {
     const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
@@ -14,37 +25,44 @@ const validateToken = (req, res, next) => {
 };
 
 // Add a new artist
-router.post('/artists', validateToken, async (req, res) => {
+router.post('/artists', validateToken, upload.single('artistAvatar'), async (req, res) => {
     const { artistName, email, phoneNumber, country, gender, recordLabelemail } = req.body;
-
+  
     if (!artistName || !email || !phoneNumber || !country || !gender || !recordLabelemail) {
-        return res.status(400).send({ message: 'All fields are required' });
+      return res.status(400).send({ message: 'All fields are required' });
     }
-
+  
+    if (!req.file) {
+      return res.status(400).send({ message: 'Artist avatar is required' });
+    }
+  
     try {
-        const existingArtist = await ArtistForRecordLabel.findOne({ email });
-        if (existingArtist) {
-            return res.status(400).send({ message: 'Artist with this email has already been saved' });
-        }
-
-        const artist = new ArtistForRecordLabel({
-            artistName,
-            email,
-            phoneNumber,
-            country,
-            recordLabelemail,
-            gender
-        });
-
-        const savedArtist = await artist.save();
-        res.status(201).send({
-            message: 'Artist saved successfully',
-            artist: savedArtist
-        });
+      const existingArtist = await ArtistForRecordLabel.findOne({ email });
+      if (existingArtist) {
+        return res.status(400).send({ message: 'Artist with this email has already been saved' });
+      }
+  
+      const result = await cloudinary.uploader.upload(req.file.path);
+  
+      const artist = new ArtistForRecordLabel({
+        artistName,
+        email,
+        phoneNumber,
+        country,
+        recordLabelemail,
+        gender,
+        artistAvatarUrl: result.secure_url
+      });
+  
+      const savedArtist = await artist.save();
+      res.status(201).send({
+        message: 'Artist saved successfully',
+        artist: savedArtist
+      });
     } catch (error) {
-        res.status(500).send({ message: error.message });
+      res.status(500).send({ message: error.message });
     }
-});
+  });
 
 // Get count of songs for each artist under a record label
 router.get('/artists/songs-count', validateToken, async (req, res) => {
