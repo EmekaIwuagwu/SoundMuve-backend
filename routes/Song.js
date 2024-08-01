@@ -181,7 +181,7 @@ router.get('/getAlbumbsByNameAndEmail', async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        const { artist_name, email } = req.body;
+        const { artist_name, email } = req.query;
 
         if (!artist_name || !email) {
             return res.status(400).json({ message: "Artist name and email are required!" });
