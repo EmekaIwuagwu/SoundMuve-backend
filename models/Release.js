@@ -8,12 +8,10 @@ const releaseSchema = new mongoose.Schema({
     },
     appleMusicUrl: {
         type: String,
-        required: true,
         max: 255,
     },
     spotifyMusicUrl: {
         type: String,
-        required: true,
         max: 255,
     },
     release_type: {
