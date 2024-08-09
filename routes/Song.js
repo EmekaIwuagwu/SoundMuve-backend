@@ -297,6 +297,7 @@ router.put('/albums/:id/page3', async (req, res) => {
 // 1. Update Album Data by ID and Email
 router.put('/albums/:id', async (req, res) => {
     try {
+
         if (
             !req.headers.authorization ||
             !req.headers.authorization.startsWith("Bearer ") ||
@@ -305,19 +306,14 @@ router.put('/albums/:id', async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        const albumId = req.params.id;
+        const { id } = req.params;
         const { email } = req.body;
 
-        if (!albumId || !email) {
-            return res.status(400).json({ message: "Album ID and Email are required!" });
-        }
-
         const updatedData = {
-            email, 
-            album_title: req.body.album_title, 
-            artist_name: req.body.artist_name, 
             appleMusicUrl: req.body.appleMusicUrl,
             spotifyMusicUrl: req.body.spotifyMusicUrl,
+            album_title: req.body.album_title,
+            artist_name: req.body.artist_name,
             language: req.body.language,
             primary_genre: req.body.primary_genre,
             secondary_genre: req.body.secondary_genre,
@@ -335,13 +331,17 @@ router.put('/albums/:id', async (req, res) => {
             song_cover_url: req.body.song_cover_url,
         };
 
-        const album = await Album.findOneAndUpdate({ _id: albumId, email: email }, updatedData, { new: true });
+        const album = await Album.findOneAndUpdate(
+            { _id: id, email: email },
+            updatedData,
+            { new: true } // Return the updated document
+        );
 
         if (!album) {
             return res.status(404).json({ message: "Album not found or email does not match!" });
         }
 
-        res.status(200).json(album);
+        res.status(200).json({ message: "Update successful", album });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ message: error.message });
@@ -359,6 +359,7 @@ router.get('/albums', async (req, res) => {
         ) {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
+
         const { email } = req.query;
 
         if (!email) {
@@ -371,7 +372,7 @@ router.get('/albums', async (req, res) => {
             return res.status(404).json({ message: "No albums found for this email!" });
         }
 
-        res.status(200).json(albums);
+        res.status(200).json({ message: "Albums Retrieved", albums });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ message: error.message });
