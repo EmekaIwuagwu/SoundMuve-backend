@@ -294,6 +294,90 @@ router.put('/albums/:id/page3', async (req, res) => {
     }
 });
 
+// 1. Update Album Data by ID and Email
+router.put('/albums/:id', async (req, res) => {
+    try {
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
+        const albumId = req.params.id;
+        const { email } = req.body;
+
+        if (!albumId || !email) {
+            return res.status(400).json({ message: "Album ID and Email are required!" });
+        }
+
+        const updatedData = {
+            email, 
+            album_title: req.body.album_title, 
+            artist_name: req.body.artist_name, 
+            appleMusicUrl: req.body.appleMusicUrl,
+            spotifyMusicUrl: req.body.spotifyMusicUrl,
+            language: req.body.language,
+            primary_genre: req.body.primary_genre,
+            secondary_genre: req.body.secondary_genre,
+            release_date: req.body.release_date,
+            release_time: req.body.release_time,
+            listenerTimeZone: req.body.listenerTimeZone,
+            otherTimeZone: req.body.otherTimeZone,
+            label_name: req.body.label_name,
+            soldWorldwide: req.body.soldWorldwide,
+            recording_location: req.body.recording_location,
+            upc_ean: req.body.upc_ean,
+            store: req.body.store,
+            social_platform: req.body.social_platform,
+            status: req.body.status,
+            song_cover_url: req.body.song_cover_url,
+        };
+
+        const album = await Album.findOneAndUpdate({ _id: albumId, email: email }, updatedData, { new: true });
+
+        if (!album) {
+            return res.status(404).json({ message: "Album not found or email does not match!" });
+        }
+
+        res.status(200).json(album);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// 2. Get All Album Releases by Email
+router.get('/albums', async (req, res) => {
+    try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required!" });
+        }
+
+        const albums = await Album.find({ email: email });
+
+        if (albums.length === 0) {
+            return res.status(404).json({ message: "No albums found for this email!" });
+        }
+
+        res.status(200).json(albums);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // PUT endpoint for page 5 (upload cover image to Cloudinary)
 router.put('/albums/:id/page5', imgParser.single('song_cover_url'), async (req, res) => {
     try {
