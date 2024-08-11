@@ -678,7 +678,7 @@ router.delete('/payout-details/:id', async (req, res) => {
 });
 
 // Show Payout Details
-router.get('/payout', async (req, res) => {
+router.get('/payout-details', async (req, res) => {
     try {
         const { email } = req.query;
 
