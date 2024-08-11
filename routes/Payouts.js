@@ -27,11 +27,11 @@ router.post('/local-transfer', async (req, res, next) => {
         }
 
         const ref = generateReferenceCode();
-        const debit_currency = null;
-        const currency = null;
+        const debit_currency = 'NGN';  // Set the currency to NGN (Nigerian Naira)
+        const currency = 'NGN';        // Set the currency to NGN (Nigerian Naira)
 
         // Destructure the request body
-        const { account_bank, account_number, email, amount, narration} = req.body;
+        const { account_bank, account_number, email, amount, narration } = req.body;
 
         // Validate the balance
         const debit = await User.findOne({ email });
