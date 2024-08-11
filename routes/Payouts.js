@@ -609,6 +609,97 @@ router.get('/banks/:country', async (req, res) => {
     }
 });
 
+router.post('/payout-details', async (req, res) => {
+    try {
+        const { fullName, bankName, accountNumber, routingNumber, email } = req.body;
+
+        if (!fullName || !bankName || !accountNumber || !email) {
+            return res.status(400).json({ message: "Full name, bank name, account number, and email are required!" });
+        }
+
+        const newPayout = new UserPayout({ fullName, bankName, accountNumber, routingNumber, email });
+        await newPayout.save();
+
+        res.status(201).json({ message: "Payout details created successfully", payout: newPayout });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Update Payout Details
+router.put('/payout-details/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email, fullName, bankName, accountNumber, routingNumber } = req.body;
+
+        if (!email || !id) {
+            return res.status(400).json({ message: "Email and ID are required!" });
+        }
+
+        const updatedPayout = await UserPayout.findOneAndUpdate(
+            { _id: id, email: email },
+            { fullName, bankName, accountNumber, routingNumber },
+            { new: true }
+        );
+
+        if (!updatedPayout) {
+            return res.status(404).json({ message: "Payout details not found!" });
+        }
+
+        res.status(200).json({ message: "Payout details updated successfully", payout: updatedPayout });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete Payout Details
+router.delete('/payout-details/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email } = req.body;
+
+        if (!email || !id) {
+            return res.status(400).json({ message: "Email and ID are required!" });
+        }
+
+        const deletedPayout = await UserPayout.findOneAndDelete({ _id: id, email: email });
+
+        if (!deletedPayout) {
+            return res.status(404).json({ message: "Payout details not found!" });
+        }
+
+        res.status(200).json({ message: "Payout details deleted successfully" });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Show Payout Details
+router.get('/payout', async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required!" });
+        }
+
+        const payoutDetails = await UserPayout.find({ email: email });
+
+        if (payoutDetails.length === 0) {
+            return res.status(404).json({ message: "No payout details found for this email!" });
+        }
+
+        res.status(200).json({ message: "Payout details retrieved", payouts: payoutDetails });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+
 router.post('/resolve-account', async (req, res) => {
     const { account_number, account_bank } = req.body;
 
