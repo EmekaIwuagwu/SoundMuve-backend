@@ -3,6 +3,7 @@ const router = require("express").Router();
 const fetch = require("node-fetch");
 const User = require("../models/User");
 const Trans = require("../models/Transactions");
+const UserPayout = require('./models/userPayout');
 
 router.post("/local-transfer", async (req, res, next) => {
     try {
