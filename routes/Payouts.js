@@ -612,6 +612,15 @@ router.get('/banks/:country', async (req, res) => {
 
 router.post('/payout-details', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { fullName, bankName, accountNumber, routingNumber, email } = req.body;
 
         if (!fullName || !bankName || !accountNumber || !email) {
@@ -631,6 +640,15 @@ router.post('/payout-details', async (req, res) => {
 // Update Payout Details
 router.put('/payout-details/:id', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { id } = req.params;
         const { email, fullName, bankName, accountNumber, routingNumber } = req.body;
 
@@ -658,6 +676,15 @@ router.put('/payout-details/:id', async (req, res) => {
 // Delete Payout Details
 router.delete('/payout-details/:id', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { id } = req.params;
         const { email } = req.body;
 
@@ -681,6 +708,15 @@ router.delete('/payout-details/:id', async (req, res) => {
 // Show Payout Details
 router.get('/payout-details', async (req, res) => {
     try {
+
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith("Bearer ") ||
+            !req.headers.authorization.split(" ")[1]
+        ) {
+            return res.status(422).json({ message: "Please Provide Token!" });
+        }
+
         const { email } = req.query;
 
         if (!email) {
