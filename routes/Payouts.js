@@ -27,11 +27,11 @@ router.post('/local-transfer', async (req, res, next) => {
         }
 
         const ref = generateReferenceCode();
-        const debit_currency = 'NGN';
-        const currency = debit_currency;
+        const debit_currency = null;
+        const currency = null;
 
         // Destructure the request body
-        const { account_bank, account_number, email, amount, narration } = req.body;
+        const { account_bank, account_number, email, amount, narration} = req.body;
 
         // Validate the balance
         const debit = await User.findOne({ email });
