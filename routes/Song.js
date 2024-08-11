@@ -327,7 +327,6 @@ router.put('/albums/:id', async (req, res) => {
             upc_ean: req.body.upc_ean,
             store: req.body.store,
             social_platform: req.body.social_platform,
-            status: req.body.status,
             song_cover_url: req.body.song_cover_url,
         };
 
@@ -351,7 +350,6 @@ router.put('/albums/:id', async (req, res) => {
 // 2. Get All Album Releases by Email
 router.get('/albums', async (req, res) => {
     try {
-
         if (
             !req.headers.authorization ||
             !req.headers.authorization.startsWith("Bearer ") ||
@@ -360,19 +358,30 @@ router.get('/albums', async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
-        const { email } = req.query;
+        const { email, artist_name } = req.query;
 
-        if (!email) {
-            return res.status(400).json({ message: "Email is required!" });
+        if (!email || !artist_name) {
+            return res.status(400).json({ message: "Email and Artist name are required!" });
         }
 
-        const albums = await Album.find({ email: email });
+        const albums = await Album.find({ email: email, artist_name: artist_name });
 
         if (albums.length === 0) {
-            return res.status(404).json({ message: "No albums found for this email!" });
+            return res.status(404).json({ message: "No albums found for this email and artist!" });
         }
 
-        res.status(200).json({ message: "Albums Retrieved", albums });
+        // Retrieve songs for each album
+        const albumsWithSongs = await Promise.all(
+            albums.map(async (album) => {
+                const songs = await Song.find({ album_id: album._id.toString() });
+                return {
+                    ...album._doc,
+                    songs,
+                };
+            })
+        );
+
+        res.status(200).json({ message: "Albums Retrieved", albums: albumsWithSongs });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ message: error.message });
