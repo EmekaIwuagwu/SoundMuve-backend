@@ -370,13 +370,14 @@ router.get('/albums', async (req, res) => {
             return res.status(404).json({ message: "No albums found for this email and artist!" });
         }
 
-        // Retrieve songs for each album
+        // Retrieve songs for each album and calculate the number of songs
         const albumsWithSongs = await Promise.all(
             albums.map(async (album) => {
                 const songs = await Song.find({ album_id: album._id.toString() });
                 return {
                     ...album._doc,
                     songs,
+                    numberOfSongs: songs.length // Calculate number of songs
                 };
             })
         );
