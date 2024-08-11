@@ -5,45 +5,49 @@ const User = require("../models/User");
 const Trans = require("../models/Transactions");
 const UserPayout = require('../models/UserPayout');
 
-router.post("/local-transfer", async (req, res, next) => {
+router.post('/local-transfer', async (req, res, next) => {
     try {
+        // Check for authorization token
         if (
             !req.headers.authorization ||
-            !req.headers.authorization.startsWith("Bearer ") ||
-            !req.headers.authorization.split(" ")[1]
+            !req.headers.authorization.startsWith('Bearer ') ||
+            !req.headers.authorization.split(' ')[1]
         ) {
-            return res.status(422).json({ message: "Please Provide Token!" });
+            return res.status(422).json({ message: 'Please Provide Token!' });
         }
 
+        // Generate a unique reference code
         function generateReferenceCode() {
             const prefix = 'akhlm-pstmnpyt-rfxx';
             const suffix = '_PMCKDU_';
-
             const randomThreeDigits = Math.floor(100 + Math.random() * 900).toString();
             const randomSevenDigits = Math.floor(1000000 + Math.random() * 9000000).toString();
             const result = `${prefix}${randomThreeDigits}${suffix}${randomSevenDigits}`;
-
             return result;
         }
 
         const ref = generateReferenceCode();
-        const debit_currency = "NGN";
+        const debit_currency = 'NGN';
         const currency = debit_currency;
 
+        // Destructure the request body
         const { account_bank, account_number, email, amount, narration } = req.body;
 
+        // Validate the balance
         const debit = await User.findOne({ email });
         const my_bal = parseInt(debit.balance);
 
         if (my_bal < amount) {
-            return res.status(403).json({ message: "Insufficient Balance" });
+            return res.status(403).json({ message: 'Insufficient Balance' });
         } else {
-            const url = "https://api.flutterwave.com/v3/transfers";
+            const url = 'https://api.flutterwave.com/v3/transfers';
+
+            // Make the POST request to the Flutterwave API
             const response = await fetch(url, {
-                method: "POST",
+                method: 'POST',
                 headers: {
-                    Accept: "application/json",
-                    "Content-type": "application/json",
+                    Accept: 'application/json',
+                    'Content-type': 'application/json',
                     Authorization: `Bearer ${process.env.SECRET_KEY}`,
                 },
                 body: JSON.stringify({
@@ -58,10 +62,17 @@ router.post("/local-transfer", async (req, res, next) => {
             });
 
             const json = await response.json();
-            if (json.status !== "success") {
-                return res.status(500).json({ message: "Transfer failed", data: json });
+            
+            // Log the response for debugging
+            console.log('Flutterwave API response:', json);
+
+            if (json.status !== 'success') {
+                // Log error details
+                console.error('Transfer failed:', json);
+                return res.status(500).json({ message: 'Transfer failed', data: json });
             }
 
+            // Update user balance and save transaction
             const debit_balance = parseInt(debit.balance);
             const debit_amt = debit_balance - amount;
 
@@ -81,11 +92,12 @@ router.post("/local-transfer", async (req, res, next) => {
             });
 
             await transactions.save();
-            console.log("Transaction saved");
+            console.log('Transaction saved');
 
-            return res.json({ error: false, data: json, message: "OK" });
+            return res.json({ error: false, data: json, message: 'OK' });
         }
     } catch (err) {
+        console.error('Error in local-transfer:', err);
         next(err);
     }
 });
