@@ -27,6 +27,9 @@ router.post('/local-transfer', async (req, res, next) => {
         }
 
         const ref = generateReferenceCode();
+        const debit_currency = 'NGN';
+        const currency = debit_currency;
+
         // Destructure the request body
         const { account_bank, account_number, email, amount, narration } = req.body;
 
@@ -39,6 +42,19 @@ router.post('/local-transfer', async (req, res, next) => {
         } else {
             const url = 'https://api.flutterwave.com/v3/transfers';
 
+            // Prepare the request body
+            const requestBody = {
+                account_bank,
+                account_number,
+                amount,
+                narration,
+                currency,
+                ref,
+                debit_currency,
+            };
+
+            console.log('Request body:', requestBody);
+
             // Make the POST request to the Flutterwave API
             const response = await fetch(url, {
                 method: 'POST',
@@ -47,19 +63,11 @@ router.post('/local-transfer', async (req, res, next) => {
                     'Content-type': 'application/json',
                     Authorization: `Bearer ${process.env.SECRET_KEY}`,
                 },
-                body: JSON.stringify({
-                    account_bank,
-                    account_number,
-                    amount,
-                    narration,
-                    currency : 'NGN',
-                    ref,
-                    debit_currency : 'NGN',
-                }),
+                body: JSON.stringify(requestBody),
             });
 
             const json = await response.json();
-            
+
             // Log the response for debugging
             console.log('Flutterwave API response:', json);
 
