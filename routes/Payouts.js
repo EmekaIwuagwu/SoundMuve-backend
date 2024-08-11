@@ -27,9 +27,6 @@ router.post('/local-transfer', async (req, res, next) => {
         }
 
         const ref = generateReferenceCode();
-        const debit_currency = 'NGN';
-        const currency = 'NGN';
-
         // Destructure the request body
         const { account_bank, account_number, email, amount, narration } = req.body;
 
@@ -55,9 +52,9 @@ router.post('/local-transfer', async (req, res, next) => {
                     account_number,
                     amount,
                     narration,
-                    currency,
+                    currency : 'NGN',
                     ref,
-                    debit_currency,
+                    debit_currency : 'NGN',
                 }),
             });
 
