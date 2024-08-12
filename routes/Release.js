@@ -182,7 +182,7 @@ router.put('/checkAndUpdateRelease', async (req, res) => {
         }
 
         const {
-            release_type, artist_name, appleMusicUrl,
+            email,release_type, artist_name, appleMusicUrl,
             spotifyMusicUrl,language, primary_genre,
             secondary_genre, release_time, label_name, recording_location,
             song_title, explicitLyrics, releaseDate, upc_ean,
@@ -202,7 +202,7 @@ router.put('/checkAndUpdateRelease', async (req, res) => {
 
         // Check each field and update if it is null
         const fieldsToUpdate = {
-            release_type, artist_name, appleMusicUrl,
+            email,release_type, artist_name, appleMusicUrl,
             spotifyMusicUrl,language, primary_genre,
             secondary_genre, release_time, label_name, recording_location,
             song_title, explicitLyrics, releaseDate, upc_ean,
