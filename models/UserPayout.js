@@ -1,35 +1,25 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const payoutUserSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required:true,
-    max: 255,
-  },  
- bankName: {
-    type: String,
-    required:true,
-    max: 255,
-  },  
-  accountNumber: {
-    type: String,
-    required:true,
-    max: 255,
-  }, 
-  routingNumber: {
-    type: String,
-    max: 255,
-  },
-  email: {
-    type: String,
-    required:true,
-    max: 255,
-  },     
-  created_at: {
-    type: Date,
-    default: Date.now(),
-  },
+const userPayoutSchema = new mongoose.Schema({
+    currency: { type: String, required: true },
+    account_number: { type: String, default: null },
+    routing_number: { type: String, default: null },
+    swift_code: { type: String, default: null },
+    bank_name: { type: String, default: null },
+    beneficiary_name: { type: String, default: null },
+    beneficiary_address: { type: String, default: null },
+    beneficiary_country: { type: String, default: null },
+    postal_code: { type: String, default: null },
+    street_number: { type: String, default: null },
+    street_name: { type: String, default: null },
+    city: { type: String, default: null },
+    account_bank: { type: String, default: null },
+    amount: { type: Number, default: null },
+    narration: { type: String, default: null },
+    email: { type: String, default: null },
+    destination_branch_code: { type: String, default: null },
+    debit_currency: { type: String, default: null },
+    created_at: { type: Date, default: Date.now }
 });
 
-
-module.exports = mongoose.model('UserPayout',payoutUserSchema);
+module.exports = mongoose.model('UserPayout', userPayoutSchema);
