@@ -172,7 +172,7 @@ router.get('/artistsList', validateToken, async (req, res) => {
         let totalSongsByLabel = 0;
 
         // Iterate over each artist and count the number of songs they have released
-        const artistsWithSongCount = await Promise.all(
+        const artistsWithDetails = await Promise.all(
             artists.map(async (artist) => {
                 const songCount = await Song.countDocuments({ email: artist.email });
                 totalSongsByLabel += songCount;
@@ -180,14 +180,18 @@ router.get('/artistsList', validateToken, async (req, res) => {
                 return {
                     artistName: artist.artistName,
                     email: artist.email,
+                    phoneNumber: artist.phoneNumber,
+                    country: artist.country,
+                    gender: artist.gender,
+                    artistAvatarUrl: artist.artistAvatarUrl,
                     songCount: songCount,
                 };
             })
         );
 
-        // Respond with the list of artists, their song counts, and the total song count
+        // Respond with the list of artists, their details, and the total song count
         res.status(200).json({
-            artists: artistsWithSongCount,
+            artists: artistsWithDetails,
             totalSongs: totalSongsByLabel,
         });
     } catch (error) {
