@@ -3,7 +3,7 @@ const router = express.Router();
 const UserPayout = require('../models/UserPayout');
 
 // Middleware for token authorization
-const authorize = (req, res, next) => {
+function verifyToken(req, res, next) {
     if (
         !req.headers.authorization ||
         !req.headers.authorization.startsWith("Bearer ") ||
@@ -11,14 +11,13 @@ const authorize = (req, res, next) => {
     ) {
         return res.status(422).json({ message: "Please Provide Token!" });
     }
-    // Implement token verification logic here if needed
+    // Proceed to the next middleware or route handler
     next();
-};
+}
 
-// Endpoint to create a new payout record
-router.post('/payout-details', authorize, async (req, res) => {
+router.post('/payout-details', verifyToken, async (req, res) => {
     try {
-        const { currency, email, ...payoutData } = req.body;
+        const { email, currency, ...payoutData } = req.body;
 
         let requiredFields = [];
 
@@ -38,7 +37,7 @@ router.post('/payout-details', authorize, async (req, res) => {
                 break;
             case 'NGN':
                 requiredFields = [
-                    'account_bank', 'account_number', 'amount', 'narration'
+                    'account_bank', 'account_number', 'narration'
                 ];
                 break;
             case 'GHS':
@@ -46,14 +45,14 @@ router.post('/payout-details', authorize, async (req, res) => {
             case 'UGX':
                 requiredFields = [
                     'email', 'account_bank', 'account_number',
-                    'amount', 'narration', 'currency', 'destination_branch_code', 'beneficiary_name'
+                    'narration', 'currency', 'destination_branch_code', 'beneficiary_name'
                 ];
                 break;
             case 'XOF':
             case 'XAF':
                 requiredFields = [
                     'email', 'account_bank', 'account_number',
-                    'beneficiary_name', 'amount', 'narration',
+                    'beneficiary_name', 'narration',
                     'currency', 'debit_currency', 'destination_branch_code'
                 ];
                 break;
@@ -69,7 +68,7 @@ router.post('/payout-details', authorize, async (req, res) => {
         }
 
         // Save the payout data
-        const userPayout = new UserPayout({ currency, email, ...payoutData });
+        const userPayout = new UserPayout({ email, currency, ...payoutData });
         await userPayout.save();
 
         res.status(201).json({ message: 'Payout saved successfully', userPayout });
@@ -80,7 +79,7 @@ router.post('/payout-details', authorize, async (req, res) => {
 });
 
 // Endpoint to show payouts by email
-router.get('/payouts/:email', authorize, async (req, res) => {
+router.get('/payouts/:email', verifyToken, async (req, res) => {
     try {
         const payouts = await UserPayout.find({ email: req.params.email });
         res.status(200).json(payouts);
@@ -90,16 +89,13 @@ router.get('/payouts/:email', authorize, async (req, res) => {
 });
 
 // Endpoint to update a payout by email and ID
-router.put('/payout/:email/:id', authorize, async (req, res) => {
+router.put('/payout/:email/:id', verifyToken, async (req, res) => {
     try {
         const updatedPayout = await UserPayout.findOneAndUpdate(
             { email: req.params.email, _id: req.params.id },
             req.body,
             { new: true }
         );
-        if (!updatedPayout) {
-            return res.status(404).json({ message: 'Payout not found' });
-        }
         res.status(200).json(updatedPayout);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -107,12 +103,9 @@ router.put('/payout/:email/:id', authorize, async (req, res) => {
 });
 
 // Endpoint to delete a payout by email and ID
-router.delete('/payout/:email/:id', authorize, async (req, res) => {
+router.delete('/payout/:email/:id', verifyToken, async (req, res) => {
     try {
-        const deletedPayout = await UserPayout.findOneAndDelete({ email: req.params.email, _id: req.params.id });
-        if (!deletedPayout) {
-            return res.status(404).json({ message: 'Payout not found' });
-        }
+        await UserPayout.findOneAndDelete({ email: req.params.email, _id: req.params.id });
         res.status(200).json({ message: 'Payout deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
