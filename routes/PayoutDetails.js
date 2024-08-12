@@ -14,6 +14,13 @@ const checkToken = (req, res, next) => {
     next();
 };
 
+
+// Helper function to remove null or undefined properties
+const removeNullProperties = (obj) => {
+    return Object.fromEntries(
+        Object.entries(obj).filter(([_, value]) => value != null)
+    );
+};
 // Endpoint to create payout details
 router.post('/payout-details', checkToken, async (req, res) => {
     try {
@@ -82,7 +89,11 @@ router.post('/payout-details', checkToken, async (req, res) => {
 router.get('/payouts/:email', checkToken, async (req, res) => {
     try {
         const payouts = await UserPayout.find({ email: req.params.email });
-        res.status(200).json(payouts);
+
+        // Remove null or undefined properties from each payout
+        const filteredPayouts = payouts.map(payout => removeNullProperties(payout.toObject()));
+
+        res.status(200).json(filteredPayouts);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
