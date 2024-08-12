@@ -45,7 +45,7 @@ router.post('/payout-details', checkToken, async (req, res) => {
             case 'UGX':
                 requiredFields = [
                     'account_bank', 'account_number',
-                    'narration', 'currency', 'destination_branch_code', 'beneficiary_name'
+                    'narration', 'destination_branch_code', 'beneficiary_name'
                 ];
                 break;
             case 'XOF':
@@ -53,7 +53,7 @@ router.post('/payout-details', checkToken, async (req, res) => {
                 requiredFields = [
                     'account_bank', 'account_number',
                     'beneficiary_name', 'narration',
-                    'currency', 'debit_currency', 'destination_branch_code'
+                    'debit_currency', 'destination_branch_code'
                 ];
                 break;
             default:
