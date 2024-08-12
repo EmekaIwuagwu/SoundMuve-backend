@@ -155,17 +155,46 @@ router.get('/artistsList/search', validateToken, async (req, res) => {
 // Get list of artists under a record label
 router.get('/artistsList', validateToken, async (req, res) => {
     const recordLabelemail = req.query.recordLabelemail;
-    
+
     if (!recordLabelemail) {
         return res.status(400).send({ message: 'recordLabelemail query parameter is required' });
     }
 
     try {
+        // Fetch artists for the given record label
         const artists = await ArtistForRecordLabel.find({ recordLabelemail });
-        res.status(200).json(artists);
+
+        // If no artists are found, return an empty array
+        if (!artists || artists.length === 0) {
+            return res.status(200).json({ artists: [], totalSongs: 0 });
+        }
+
+        let totalSongsByLabel = 0;
+
+        // Iterate over each artist and count the number of songs they have released
+        const artistsWithSongCount = await Promise.all(
+            artists.map(async (artist) => {
+                const songCount = await Song.countDocuments({ email: artist.email });
+                totalSongsByLabel += songCount;
+
+                return {
+                    artistName: artist.artistName,
+                    email: artist.email,
+                    songCount: songCount,
+                };
+            })
+        );
+
+        // Respond with the list of artists, their song counts, and the total song count
+        res.status(200).json({
+            artists: artistsWithSongCount,
+            totalSongs: totalSongsByLabel,
+        });
     } catch (error) {
+        console.error('Error:', error);
         res.status(500).json({ message: error.message });
     }
 });
+
 
 module.exports = router;

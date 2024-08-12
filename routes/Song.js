@@ -247,7 +247,7 @@ router.get('/getAlbumbsByNameAndEmail', async (req, res) => {
 
 router.post('/albums', async (req, res) => {
     try {
-
+        // Check if authorization token is provided
         if (
             !req.headers.authorization ||
             !req.headers.authorization.startsWith("Bearer ") ||
@@ -256,27 +256,48 @@ router.post('/albums', async (req, res) => {
             return res.status(422).json({ message: "Please Provide Token!" });
         }
 
+        // Destructure request body data
         const {
-            email, album_title, artist_name, appleMusicUrl,spotifyMusicUrl ,language, primary_genre, secondary_genre, release_date, release_time,
-            listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store,
-            social_platform, status
-        } = req.body;
-
-        const albumData = {
             email, album_title, artist_name, appleMusicUrl, spotifyMusicUrl, language, primary_genre, secondary_genre, release_date, release_time,
             listenerTimeZone, otherTimeZone, label_name, soldWorldwide, recording_location, upc_ean, store,
-            social_platform, status
+            social_platform
+        } = req.body;
+
+        // Prepare album data with status set to 'PENDING'
+        const albumData = {
+            email,
+            album_title,
+            artist_name,
+            appleMusicUrl,
+            spotifyMusicUrl,
+            language,
+            primary_genre,
+            secondary_genre,
+            release_date,
+            release_time,
+            listenerTimeZone,
+            otherTimeZone,
+            label_name,
+            soldWorldwide,
+            recording_location,
+            upc_ean,
+            store,
+            social_platform,
+            status: 'PENDING'  // Set status to 'PENDING'
         };
 
+        // Create a new Album instance and save it to the database
         const album = new Album(albumData);
         await album.save();
 
+        // Return the created album in the response
         res.status(201).json(album);
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ message: error.message });
     }
 });
+
 
 router.put('/albums/:id/page2', async (req, res) => {
     try {
