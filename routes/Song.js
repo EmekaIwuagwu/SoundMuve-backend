@@ -43,6 +43,51 @@ const validateToken = (req, res, next) => {
     next();
 };
 
+const checkAuth = (req, res, next) => {
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+    next();
+};
+
+
+router.get('/GetMyAlbumsByEmail', checkAuth, async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required!" });
+        }
+
+        const albums = await Album.find({ email });
+
+        if (albums.length === 0) {
+            return res.status(404).json({ message: "No albums found for this email!" });
+        }
+
+        // Retrieve songs for each album and calculate the number of songs
+        const albumsWithSongs = await Promise.all(
+            albums.map(async (album) => {
+                const songs = await Song.find({ album_id: album._id.toString() });
+                return {
+                    ...album._doc,
+                    songs,
+                    numberOfSongs: songs.length // Calculate number of songs
+                };
+            })
+        );
+
+        res.status(200).json({ message: "Albums Retrieved", albums: albumsWithSongs });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Endpoint to upload songs to Cloudinary and save song details in MongoDB
 router.post('/page4', parser.single('song_mp3'), async (req, res) => {
     
