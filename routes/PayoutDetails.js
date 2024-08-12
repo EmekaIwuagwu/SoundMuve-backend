@@ -2,25 +2,23 @@ const express = require('express');
 const router = express.Router();
 const UserPayout = require('../models/UserPayout');
 
-// Middleware to check for authorization token
-function checkAuthToken(req, res, next) {
+// Middleware for token authorization
+const authorize = (req, res, next) => {
     if (
         !req.headers.authorization ||
-        !req.headers.authorization.startsWith('Bearer ') ||
-        !req.headers.authorization.split(' ')[1]
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
     ) {
-        return res.status(422).json({ message: 'Please Provide Token!' });
+        return res.status(422).json({ message: "Please Provide Token!" });
     }
+    // Implement token verification logic here if needed
     next();
-}
+};
 
-// Apply the middleware to all routes
-router.use(checkAuthToken);
-
-// Endpoint to handle payouts based on currency
-router.post('/payout-details', async (req, res) => {
+// Endpoint to create a new payout record
+router.post('/payout-details', authorize, async (req, res) => {
     try {
-        const { currency, ...payoutData } = req.body;
+        const { currency, email, ...payoutData } = req.body;
 
         let requiredFields = [];
 
@@ -71,7 +69,7 @@ router.post('/payout-details', async (req, res) => {
         }
 
         // Save the payout data
-        const userPayout = new UserPayout({ currency, ...payoutData });
+        const userPayout = new UserPayout({ currency, email, ...payoutData });
         await userPayout.save();
 
         res.status(201).json({ message: 'Payout saved successfully', userPayout });
@@ -81,30 +79,40 @@ router.post('/payout-details', async (req, res) => {
     }
 });
 
-// Endpoint to show all payouts
-router.get('/payouts', async (req, res) => {
+// Endpoint to show payouts by email
+router.get('/payouts/:email', authorize, async (req, res) => {
     try {
-        const payouts = await UserPayout.find();
+        const payouts = await UserPayout.find({ email: req.params.email });
         res.status(200).json(payouts);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-// Endpoint to update a payout
-router.put('/payout/:id', async (req, res) => {
+// Endpoint to update a payout by email and ID
+router.put('/payout/:email/:id', authorize, async (req, res) => {
     try {
-        const updatedPayout = await UserPayout.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedPayout = await UserPayout.findOneAndUpdate(
+            { email: req.params.email, _id: req.params.id },
+            req.body,
+            { new: true }
+        );
+        if (!updatedPayout) {
+            return res.status(404).json({ message: 'Payout not found' });
+        }
         res.status(200).json(updatedPayout);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-// Endpoint to delete a payout
-router.delete('/payout/:id', async (req, res) => {
+// Endpoint to delete a payout by email and ID
+router.delete('/payout/:email/:id', authorize, async (req, res) => {
     try {
-        await UserPayout.findByIdAndDelete(req.params.id);
+        const deletedPayout = await UserPayout.findOneAndDelete({ email: req.params.email, _id: req.params.id });
+        if (!deletedPayout) {
+            return res.status(404).json({ message: 'Payout not found' });
+        }
         res.status(200).json({ message: 'Payout deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
