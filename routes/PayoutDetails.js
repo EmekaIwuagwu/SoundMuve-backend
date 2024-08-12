@@ -44,14 +44,14 @@ router.post('/payout-details', checkToken, async (req, res) => {
             case 'TZS':
             case 'UGX':
                 requiredFields = [
-                    'email', 'account_bank', 'account_number',
+                    'account_bank', 'account_number',
                     'narration', 'currency', 'destination_branch_code', 'beneficiary_name'
                 ];
                 break;
             case 'XOF':
             case 'XAF':
                 requiredFields = [
-                    'email', 'account_bank', 'account_number',
+                    'account_bank', 'account_number',
                     'beneficiary_name', 'narration',
                     'currency', 'debit_currency', 'destination_branch_code'
                 ];
