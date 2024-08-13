@@ -44,7 +44,7 @@ router.post('/payout-details', checkToken, async (req, res) => {
                 break;
             case 'NGN':
                 requiredFields = [
-                    'account_bank', 'account_number', 'narration'
+                    'account_bank', 'account_number'
                 ];
                 break;
             case 'GHS':
@@ -52,14 +52,14 @@ router.post('/payout-details', checkToken, async (req, res) => {
             case 'UGX':
                 requiredFields = [
                     'account_bank', 'account_number',
-                    'narration', 'destination_branch_code', 'beneficiary_name'
+                    'destination_branch_code', 'beneficiary_name'
                 ];
                 break;
             case 'XOF':
             case 'XAF':
                 requiredFields = [
                     'account_bank', 'account_number',
-                    'beneficiary_name', 'narration',
+                    'beneficiary_name',
                     'debit_currency', 'destination_branch_code'
                 ];
                 break;

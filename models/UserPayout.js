@@ -14,8 +14,6 @@ const userPayoutSchema = new mongoose.Schema({
     street_name: { type: String, default: null },
     city: { type: String, default: null },
     account_bank: { type: String, default: null },
-    amount: { type: Number, default: null },
-    narration: { type: String, default: null },
     email: { type: String, default: null },
     destination_branch_code: { type: String, default: null },
     debit_currency: { type: String, default: null },
