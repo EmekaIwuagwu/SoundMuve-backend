@@ -184,6 +184,8 @@ router.post("/us-transfer", async (req, res, next) => {
             return res.status(500).json({ message: "Transfer failed", data: json });
         }
 
+        const { status } = json;
+
         const debit = await User.findOne({ email });
         const debit_balance = debit.balance;
         const debit_amt = debit_balance - output_amount;
@@ -200,6 +202,7 @@ router.post("/us-transfer", async (req, res, next) => {
             currency,
             amount,
             balance: debit_amt,
+            status
         });
 
         await transactions.save();
@@ -367,6 +370,8 @@ const handleGHSUGXPayment = async (req, res, next) => {
                 return res.status(500).json({ message: "Transfer failed", data: json });
             }
 
+            const { status } = json;
+
             const debit_balance = parseInt(debit.balance);
             const debit_amt = debit_balance - amount;
 
@@ -383,6 +388,7 @@ const handleGHSUGXPayment = async (req, res, next) => {
                 amount,
                 currency,
                 balance: debit_amt,
+                status
             });
 
             await transactions.save();
@@ -436,6 +442,8 @@ const handleXAFXOFPayment = async (req, res, next) => {
                 return res.status(500).json({ message: "Transfer failed", data: json });
             }
 
+            const { status } = json;
+
             const debit_balance = parseInt(debit.balance);
             const debit_amt = debit_balance - amount;
 
@@ -452,6 +460,7 @@ const handleXAFXOFPayment = async (req, res, next) => {
                 amount,
                 currency,
                 balance: debit_amt,
+                status
             });
 
             await transactions.save();
@@ -500,6 +509,8 @@ const handleZARPayments = async (req, res, next) => {
                 return res.status(500).json({ message: "Transfer failed", data: json });
             }
 
+            const { status } = json;
+
             const debit_balance = parseInt(debit.balance);
             const debit_amt = debit_balance - amount;
 
@@ -516,6 +527,7 @@ const handleZARPayments = async (req, res, next) => {
                 amount,
                 currency,
                 balance: debit_amt,
+                status
             });
 
             await transactions.save();
@@ -567,6 +579,8 @@ const handleKESPayments = async (req, res, next) => {
                 return res.status(500).json({ message: "Transfer failed", data: json });
             }
 
+            const { status } = json;
+
             const debit_balance = parseInt(debit.balance);
             const debit_amt = debit_balance - amount;
 
@@ -583,6 +597,7 @@ const handleKESPayments = async (req, res, next) => {
                 amount,
                 currency,
                 balance: debit_amt,
+                status
             });
 
             await transactions.save();
