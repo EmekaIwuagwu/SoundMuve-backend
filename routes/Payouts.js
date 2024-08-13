@@ -22,8 +22,7 @@ router.post('/local-transfer', async (req, res, next) => {
             const suffix = '_PMCKDU_';
             const randomThreeDigits = Math.floor(100 + Math.random() * 900).toString();
             const randomSevenDigits = Math.floor(1000000 + Math.random() * 9000000).toString();
-            const result = `${prefix}${randomThreeDigits}${suffix}${randomSevenDigits}`;
-            return result;
+            return `${prefix}${randomThreeDigits}${suffix}${randomSevenDigits}`;
         }
 
         const ref = generateReferenceCode();
@@ -31,7 +30,7 @@ router.post('/local-transfer', async (req, res, next) => {
         const currency = 'NGN';        // Set the currency to NGN (Nigerian Naira)
 
         // Destructure the request body
-        const { account_bank, account_number, email, amount, narration} = req.body;
+        const { account_bank, account_number, email, amount, narration } = req.body;
 
         // Validate the balance
         const debit = await User.findOne({ email });
@@ -77,6 +76,9 @@ router.post('/local-transfer', async (req, res, next) => {
                 return res.status(500).json({ message: 'Transfer failed', data: json });
             }
 
+            // Extract the status from the response
+            const { status } = json;
+
             // Update user balance and save transaction
             const debit_balance = parseInt(debit.balance);
             const debit_amt = debit_balance - amount;
@@ -86,7 +88,8 @@ router.post('/local-transfer', async (req, res, next) => {
                 { $set: { balance: debit_amt } }
             );
 
-            const transactions = new Trans({
+            // Save transaction details to the database
+            const transaction = new Trans({
                 email,
                 narration,
                 credit: 0.0,
@@ -94,10 +97,11 @@ router.post('/local-transfer', async (req, res, next) => {
                 currency,
                 amount,
                 balance: debit_amt,
+                status, // Save the status from the response
             });
 
-            await transactions.save();
-            console.log('Transaction saved');
+            await transaction.save();
+            console.log('Transaction saved:', transaction);
 
             return res.json({ error: false, data: json, message: 'OK' });
         }

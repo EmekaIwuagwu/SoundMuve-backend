@@ -28,6 +28,10 @@ const transactionSchema = new mongoose.Schema({
     required:true,
     max: 255,
   },
+  status: {
+    type: String,
+    max: 255,
+  },
   balance: {
     type: mongoose.SchemaTypes.Number,
     required:true,
