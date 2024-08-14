@@ -74,7 +74,7 @@ router.post('/approve/:transactionId', async (req, res) => {
                 return res.status(404).json({ message: 'Payout information not found for the specified currency.' });
             }
 
-            // Prepare Flutterwave request data
+            // Prepare Flutterwave request data based on currency
             let transferData = {};
             switch (transaction.currency) {
                 case 'USD':
@@ -110,7 +110,7 @@ router.post('/approve/:transactionId', async (req, res) => {
                         }
                     };
                     break;
-                case 'NGN':
+                case 'NGN': // Already working fine, included for completeness
                     transferData = {
                         account_bank: payout.account_bank,
                         account_number: payout.account_number,
@@ -205,5 +205,4 @@ router.post('/approve/:transactionId', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
-
 module.exports = router;
