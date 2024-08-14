@@ -57,9 +57,9 @@ router.post('/initiate', async (req, res) => {
 });
 
 // Route to approve a transaction
-router.post('/approve/:transactionId', async (req, res) => {
-    const { transactionId } = req.params;
-    const { approved, adminComments } = req.body;
+router.post('/authorizeTransaction', async (req, res) => {
+
+    const { approved, adminComments, transactionId } = req.body;
 
     try {
         const transaction = await Transactions.findById(transactionId);
