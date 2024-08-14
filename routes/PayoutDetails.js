@@ -24,7 +24,11 @@ const removeNullProperties = (obj) => {
 // Endpoint to create payout details
 router.post('/payout-details', checkToken, async (req, res) => {
     try {
-        const { currency, email, ...payoutData } = req.body;
+        const { currency, email, meta } = req.body;
+
+        if (!currency || !email || !meta) {
+            return res.status(400).json({ message: 'Currency, email, and meta are required.' });
+        }
 
         let requiredFields = [];
 
@@ -67,15 +71,24 @@ router.post('/payout-details', checkToken, async (req, res) => {
                 return res.status(400).json({ message: 'Unsupported currency' });
         }
 
-        // Validate that all required fields are present
-        for (const field of requiredFields) {
-            if (!payoutData[field]) {
-                return res.status(400).json({ message: `${field} is required for currency ${currency}` });
+        if (['USD', 'EUR'].includes(currency)) {
+            // Validate that all required fields are present in meta
+            for (const field of requiredFields) {
+                if (!meta[0][field]) {
+                    return res.status(400).json({ message: `${field} is required for currency ${currency}` });
+                }
+            }
+        } else {
+            // Validate for other currencies directly from request body
+            for (const field of requiredFields) {
+                if (!req.body[field]) {
+                    return res.status(400).json({ message: `${field} is required for currency ${currency}` });
+                }
             }
         }
 
-        // Save the payout data
-        const userPayout = new UserPayout({ currency, email, ...payoutData });
+        // Save the payout data with meta information
+        const userPayout = new UserPayout({ currency, email, meta });
         await userPayout.save();
 
         res.status(201).json({ message: 'Payout saved successfully', userPayout });
