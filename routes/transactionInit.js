@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Transactions = require('../models/Transactions');
-const UserPayout = require('../models/userPayout');
+const UserPayout = require('../models/UserPayout');
 const TransactionApproval = require('../models/transactionApproval');
 const axios = require('axios');
 
