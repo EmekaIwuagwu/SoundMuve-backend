@@ -29,6 +29,53 @@ const retryPayment = async (endpoint, transferData, jwtToken) => {
     }
 };
 
+router.post('/initiate', async (req, res) => {
+    const { email, narration, amount, currency } = req.body;
+
+    // Validate input
+    if (!email || !narration || !amount || !currency) {
+        return res.status(400).json({ message: 'Email, narration, amount, and currency are required.' });
+    }
+
+    try {
+        // Find the user and their balance
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Find the payout information matching the email and currency
+        const payout = await UserPayout.findOne({ email, currency });
+        if (!payout) {
+            return res.status(404).json({ message: 'Payout information not found for the specified currency.' });
+        }
+
+        // Check if the user has enough balance
+        if (user.balance < amount) {
+            return res.status(400).json({ message: 'Insufficient balance.' });
+        }
+
+        // Create a new transaction with status "Pending"
+        const transaction = new Transactions({
+            email,
+            narration,
+            credit: 0,
+            debit: amount,
+            amount,
+            currency,
+            status: 'Pending',
+            balance: user.balance - amount,
+        });
+
+        await transaction.save();
+        res.status(201).json({ message: 'Transaction initiated and saved for approval.', transaction });
+
+    } catch (error) {
+        console.error('Error initiating transaction:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Route to approve a transaction
 router.post('/approve/:transactionId', async (req, res) => {
     const { transactionId } = req.params;
