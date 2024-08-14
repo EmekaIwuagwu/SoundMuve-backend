@@ -84,13 +84,15 @@ router.post('/approve/:transactionId', async (req, res) => {
             switch (transaction.currency) {
                 case 'USD':
                     transferData = {
-                        account_bank: payout.account_bank,
-                        account_number: payout.account_number,
                         amount: transaction.amount,
                         narration: transaction.narration,
                         currency: 'USD',
                         beneficiary_name: payout.beneficiary_name,
                         meta: {
+                            account_number: payout.account_number,
+                            routing_number: payout.routing_number || '',
+                            swift_code: payout.swift_code || '',
+                            bank_name: payout.bank_name || '',
                             beneficiary_name: payout.beneficiary_name,
                             beneficiary_address: payout.beneficiary_address || '',
                             beneficiary_country: payout.beneficiary_country || ''
@@ -99,13 +101,15 @@ router.post('/approve/:transactionId', async (req, res) => {
                     break;
                 case 'EUR':
                     transferData = {
-                        account_bank: payout.account_bank,
-                        account_number: payout.account_number,
                         amount: transaction.amount,
                         narration: transaction.narration,
                         currency: 'EUR',
                         beneficiary_name: payout.beneficiary_name,
                         meta: {
+                            account_number: payout.account_number,
+                            routing_number: payout.routing_number || '',
+                            swift_code: payout.swift_code || '',
+                            bank_name: payout.bank_name || '',
                             beneficiary_name: payout.beneficiary_name,
                             beneficiary_country: payout.beneficiary_country || '',
                             postal_code: payout.postal_code || '',
@@ -162,8 +166,9 @@ router.post('/approve/:transactionId', async (req, res) => {
                 const response = await fetch(FLUTTERWAVE_API_URL, {
                     method: 'POST',
                     headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
                         Authorization: `Bearer ${process.env.SECRET_KEY}`,
-                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(transferData)
                 });
