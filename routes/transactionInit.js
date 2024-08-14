@@ -74,6 +74,9 @@ router.post('/approve/:transactionId', async (req, res) => {
                 return res.status(404).json({ message: 'Payout information not found for the specified currency.' });
             }
 
+            // Log payout information for debugging
+            console.log('Payout Information:', payout);
+
             // Prepare Flutterwave request data based on currency
             let transferData = {};
             switch (transaction.currency) {
@@ -87,8 +90,8 @@ router.post('/approve/:transactionId', async (req, res) => {
                         beneficiary_name: payout.beneficiary_name,
                         meta: {
                             beneficiary_name: payout.beneficiary_name,
-                            beneficiary_address: payout.beneficiary_address,
-                            beneficiary_country: payout.beneficiary_country
+                            beneficiary_address: payout.beneficiary_address || '', // Use empty string if undefined
+                            beneficiary_country: payout.beneficiary_country || '' // Use empty string if undefined
                         }
                     };
                     break;
@@ -102,11 +105,11 @@ router.post('/approve/:transactionId', async (req, res) => {
                         beneficiary_name: payout.beneficiary_name,
                         meta: {
                             beneficiary_name: payout.beneficiary_name,
-                            beneficiary_country: payout.beneficiary_country,
-                            postal_code: payout.postal_code,
-                            street_number: payout.street_number,
-                            street_name: payout.street_name,
-                            city: payout.city
+                            beneficiary_country: payout.beneficiary_country || '',
+                            postal_code: payout.postal_code || '',
+                            street_number: payout.street_number || '',
+                            street_name: payout.street_name || '',
+                            city: payout.city || ''
                         }
                     };
                     break;
@@ -128,7 +131,7 @@ router.post('/approve/:transactionId', async (req, res) => {
                         amount: transaction.amount,
                         narration: transaction.narration,
                         currency: transaction.currency,
-                        destination_branch_code: payout.destination_branch_code,
+                        destination_branch_code: payout.destination_branch_code || '',
                         beneficiary_name: payout.beneficiary_name
                     };
                     break;
@@ -141,13 +144,16 @@ router.post('/approve/:transactionId', async (req, res) => {
                         amount: transaction.amount,
                         narration: transaction.narration,
                         currency: transaction.currency,
-                        debit_currency: payout.debit_currency,
-                        destination_branch_code: payout.destination_branch_code
+                        debit_currency: payout.debit_currency || '',
+                        destination_branch_code: payout.destination_branch_code || ''
                     };
                     break;
                 default:
                     return res.status(400).json({ message: 'Unsupported currency.' });
             }
+
+            // Log transfer data for debugging
+            console.log('Transfer Data:', transferData);
 
             try {
                 // Call Flutterwave API to initiate the payout using node-fetch
