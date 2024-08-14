@@ -25,10 +25,10 @@ router.post('/initiate', async (req, res) => {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Find the payout information
-        const payout = await UserPayout.findOne({ email });
+        // Find the payout information matching the email and currency
+        const payout = await UserPayout.findOne({ email, currency });
         if (!payout) {
-            return res.status(404).json({ message: 'Payout information not found.' });
+            return res.status(404).json({ message: 'Payout information not found for the specified currency.' });
         }
 
         // Check if the user has enough balance
@@ -68,10 +68,10 @@ router.post('/approve/:transactionId', async (req, res) => {
         }
 
         if (approved) {
-            // Fetch user payout information
-            const payout = await UserPayout.findOne({ email: transaction.email });
+            // Fetch user payout information matching email and transaction currency
+            const payout = await UserPayout.findOne({ email: transaction.email, currency: transaction.currency });
             if (!payout) {
-                return res.status(404).json({ message: 'Payout information not found.' });
+                return res.status(404).json({ message: 'Payout information not found for the specified currency.' });
             }
 
             // Prepare Flutterwave request data
