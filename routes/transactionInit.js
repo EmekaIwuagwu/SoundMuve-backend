@@ -18,7 +18,7 @@ const retryPayment = async (endpoint, transferData, jwtToken) => {
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${jwtToken}`,
+                Authorization: `Bearer ${process.env.JWT_TOKEN}`,
             },
             body: JSON.stringify(transferData)
         });
