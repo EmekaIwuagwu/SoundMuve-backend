@@ -17,6 +17,7 @@ const songs = require("./routes/Song");
 const recordLabel = require("./routes/RecordLabel");
 const payoutDetails = require("./routes/PayoutDetails");
 const currency = require("./routes/CurrencyManager");
+const initiateTransaction = require("./routes/transactionInit");
 
 app.use(cors())
 
@@ -59,10 +60,11 @@ app.use("/api/payouts",payouts);
 app.use("/api/currency",currency);
 app.use("/api/recordLabel",recordLabel);
 app.use("/api/payoutDetails",payoutDetails);
+app.use("/api/transactionInit",initiateTransaction);
 
 
 app.get("/", function (req, res) {
-  res.json({ homeresponse: "Welcome" });
+  res.json({ homeresponse: "Welcome :)" });
 });
 
 app.listen(port, function () {
