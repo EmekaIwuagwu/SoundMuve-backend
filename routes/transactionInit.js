@@ -1,5 +1,5 @@
 // routes/transaction.js
-require('dotenv').config()
+require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -10,6 +10,7 @@ const axios = require('axios');
 
 const FLUTTERWAVE_API_URL = 'https://api.flutterwave.com/v3/transfers';
 
+// Route to initiate a transaction
 router.post('/initiate', async (req, res) => {
     const { email, narration, amount } = req.body;
 
@@ -28,6 +29,11 @@ router.post('/initiate', async (req, res) => {
         const payout = await UserPayout.findOne({ email });
         if (!payout) {
             return res.status(404).json({ message: 'Payout information not found.' });
+        }
+
+        // Check if the user has enough balance
+        if (user.balance < amount) {
+            return res.status(400).json({ message: 'Insufficient balance.' });
         }
 
         // Create a new transaction with status "Pending"
@@ -50,7 +56,7 @@ router.post('/initiate', async (req, res) => {
     }
 });
 
-
+// Route to approve a transaction
 router.post('/approve/:transactionId', async (req, res) => {
     const { transactionId } = req.params;
     const { approved, adminComments } = req.body;
@@ -73,57 +79,50 @@ router.post('/approve/:transactionId', async (req, res) => {
             switch (payout.currency) {
                 case 'USD':
                     transferData = {
-                        email: transaction.email,
+                        account_bank: payout.account_bank,
+                        account_number: payout.account_number,
                         amount: transaction.amount,
                         narration: transaction.narration,
                         currency: 'USD',
                         beneficiary_name: payout.beneficiary_name,
-                        meta: [{
-                            account_number: payout.account_number,
-                            routing_number: payout.routing_number,
-                            swift_code: payout.swift_code,
-                            bank_name: payout.bank_name,
+                        meta: {
                             beneficiary_name: payout.beneficiary_name,
                             beneficiary_address: payout.beneficiary_address,
                             beneficiary_country: payout.beneficiary_country
-                        }]
+                        }
                     };
                     break;
                 case 'EUR':
                     transferData = {
-                        email: transaction.email,
+                        account_bank: payout.account_bank,
+                        account_number: payout.account_number,
                         amount: transaction.amount,
                         narration: transaction.narration,
                         currency: 'EUR',
                         beneficiary_name: payout.beneficiary_name,
-                        meta: [{
-                            account_number: payout.account_number,
-                            routing_number: payout.routing_number,
-                            swift_code: payout.swift_code,
-                            bank_name: payout.bank_name,
+                        meta: {
                             beneficiary_name: payout.beneficiary_name,
                             beneficiary_country: payout.beneficiary_country,
                             postal_code: payout.postal_code,
                             street_number: payout.street_number,
                             street_name: payout.street_name,
                             city: payout.city
-                        }]
+                        }
                     };
                     break;
                 case 'NGN':
                     transferData = {
-                        email: transaction.email,
                         account_bank: payout.account_bank,
                         account_number: payout.account_number,
                         amount: transaction.amount,
-                        narration: transaction.narration
+                        narration: transaction.narration,
+                        currency: 'NGN',
                     };
                     break;
                 case 'GHS':
                 case 'TZS':
                 case 'UGX':
                     transferData = {
-                        email: transaction.email,
                         account_bank: payout.account_bank,
                         account_number: payout.account_number,
                         amount: transaction.amount,
@@ -136,7 +135,6 @@ router.post('/approve/:transactionId', async (req, res) => {
                 case 'XAF':
                 case 'XOF':
                     transferData = {
-                        email: transaction.email,
                         account_bank: payout.account_bank,
                         account_number: payout.account_number,
                         beneficiary_name: payout.beneficiary_name,
@@ -151,29 +149,40 @@ router.post('/approve/:transactionId', async (req, res) => {
                     return res.status(400).json({ message: 'Unsupported currency.' });
             }
 
-            // Call Flutterwave API to initiate the payout
-            const response = await axios.post(FLUTTERWAVE_API_URL, transferData, {
-                headers: {
-                    Authorization: `Bearer ${process.env.SECRET_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.data.status === 'success') {
-                // Update transaction status to "Completed"
-                transaction.status = 'Completed';
-                await transaction.save();
-
-                // Save approval record
-                await TransactionApproval.create({
-                    transactionId,
-                    approved: true,
-                    adminComments
+            try {
+                // Call Flutterwave API to initiate the payout
+                const response = await axios.post(FLUTTERWAVE_API_URL, transferData, {
+                    headers: {
+                        Authorization: `Bearer ${process.env.SECRET_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                res.status(200).json({ message: 'Transaction approved and payout initiated.', response: response.data });
-            } else {
-                res.status(400).json({ message: 'Failed to initiate payout.', response: response.data });
+                console.log('Flutterwave API Response:', response.data); // Debug log
+
+                if (response.data.status === 'success') {
+                    // Update transaction status to "Completed"
+                    transaction.status = 'Completed';
+                    await transaction.save();
+
+                    // Save approval record
+                    await TransactionApproval.create({
+                        transactionId,
+                        approved: true,
+                        adminComments
+                    });
+
+                    res.status(200).json({ message: 'Transaction approved and payout initiated.', response: response.data });
+                } else {
+                    res.status(400).json({
+                        message: 'Failed to initiate payout.',
+                        error: response.data.message || 'Unknown error',
+                        response: response.data
+                    });
+                }
+            } catch (apiError) {
+                console.error('Flutterwave API Error:', apiError.response?.data || apiError.message);
+                res.status(500).json({ message: 'Error communicating with payment gateway.', error: apiError.response?.data || apiError.message });
             }
         } else {
             // Update transaction status to "Rejected"
