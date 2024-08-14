@@ -14,13 +14,13 @@ const checkToken = (req, res, next) => {
     next();
 };
 
-
 // Helper function to remove null or undefined properties
 const removeNullProperties = (obj) => {
     return Object.fromEntries(
         Object.entries(obj).filter(([_, value]) => value != null)
     );
 };
+
 // Endpoint to create payout details
 router.post('/payout-details', checkToken, async (req, res) => {
     try {
@@ -87,8 +87,20 @@ router.post('/payout-details', checkToken, async (req, res) => {
             }
         }
 
-        // Save the payout data with meta information
-        const userPayout = new UserPayout({ currency, email, meta });
+        // Prepare the payout data based on the currency and meta fields
+        const payoutData = { currency, email };
+        if (['USD', 'EUR'].includes(currency)) {
+            Object.assign(payoutData, meta[0]);
+        } else {
+            requiredFields.forEach(field => {
+                if (req.body[field]) {
+                    payoutData[field] = req.body[field];
+                }
+            });
+        }
+
+        // Save the payout data
+        const userPayout = new UserPayout(removeNullProperties(payoutData));
         await userPayout.save();
 
         res.status(201).json({ message: 'Payout saved successfully', userPayout });
