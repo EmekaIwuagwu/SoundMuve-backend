@@ -10,6 +10,10 @@ const TransactionApproval = require('../models/transactionApproval');
 
 const FLUTTERWAVE_API_URL = 'https://api.flutterwave.com/v3/transfers';
 
+// Define alternative endpoints for EUR and USD retries
+const ALTERNATIVE_EUR_ENDPOINT = 'https://soundmuve-backend-zrap.onrender.com/api/payouts/euro-payments';
+const ALTERNATIVE_USD_ENDPOINT = 'https://soundmuve-backend-zrap.onrender.com/api/payouts/us-transfer';
+
 // Route to initiate a transaction
 router.post('/initiate', async (req, res) => {
     const { email, narration, amount, currency } = req.body;
@@ -191,11 +195,18 @@ router.post('/approve/:transactionId', async (req, res) => {
                     res.status(200).json({ message: 'Transaction approved and payout initiated.', response: responseData });
                 } else {
                     console.error('Failed to initiate payout:', responseData.message); // Debug log
-                    res.status(400).json({
-                        message: 'Failed to initiate payout.',
-                        error: responseData.message || 'Unknown error',
-                        response: responseData
-                    });
+                    // If initial payout fails, retry with alternative endpoint based on currency
+                    if (transaction.currency === 'USD') {
+                        retryWithAlternativeEndpoint(transaction, payout, ALTERNATIVE_USD_ENDPOINT, res, transactionId, adminComments);
+                    } else if (transaction.currency === 'EUR') {
+                        retryWithAlternativeEndpoint(transaction, payout, ALTERNATIVE_EUR_ENDPOINT, res, transactionId, adminComments);
+                    } else {
+                        res.status(400).json({
+                            message: 'Failed to initiate payout.',
+                            error: responseData.message || 'Unknown error',
+                            response: responseData
+                        });
+                    }
                 }
             } catch (apiError) {
                 console.error('Flutterwave API Error:', apiError);
@@ -220,5 +231,70 @@ router.post('/approve/:transactionId', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+// Helper function to retry payout with alternative endpoint
+async function retryWithAlternativeEndpoint(transaction, payout, endpoint, res, transactionId, adminComments) {
+    try {
+        const retryResponse = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: transaction.email,
+                amount: transaction.amount,
+                narration: transaction.narration,
+                currency: transaction.currency,
+                beneficiary_name: payout.beneficiary_name,
+                meta: transaction.currency === 'USD' ? {
+                    account_number: payout.account_number,
+                    routing_number: payout.routing_number || '',
+                    swift_code: payout.swift_code || '',
+                    bank_name: payout.bank_name || '',
+                    beneficiary_name: payout.beneficiary_name,
+                    beneficiary_address: payout.beneficiary_address || '',
+                    beneficiary_country: payout.beneficiary_country || ''
+                } : {
+                    account_number: payout.account_number,
+                    routing_number: payout.routing_number || '',
+                    swift_code: payout.swift_code || '',
+                    bank_name: payout.bank_name || '',
+                    beneficiary_name: payout.beneficiary_name,
+                    beneficiary_country: payout.beneficiary_country || '',
+                    postal_code: payout.postal_code || '',
+                    street_number: payout.street_number || '',
+                    street_name: payout.street_name || '',
+                    city: payout.city || ''
+                }
+            })
+        });
+
+        const retryData = await retryResponse.json();
+        console.log('Alternative Endpoint Response:', retryData); // Debug log
+
+        if (retryData.success) {
+            transaction.status = 'Completed';
+            await transaction.save();
+
+            await TransactionApproval.create({
+                transactionId,
+                approved: true,
+                adminComments
+            });
+
+            res.status(200).json({ message: 'Transaction approved and payout initiated via alternative endpoint.', response: retryData });
+        } else {
+            res.status(400).json({
+                message: 'Failed to initiate payout via alternative endpoint.',
+                error: retryData.error || 'Unknown error',
+                response: retryData
+            });
+        }
+    } catch (error) {
+        console.error('Alternative Endpoint Error:', error);
+        res.status(500).json({ message: 'Error communicating with alternative payment endpoint.', error: error.message });
+    }
+}
 
 module.exports = router;
