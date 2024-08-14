@@ -1,21 +1,21 @@
 // routes/transaction.js
 require('dotenv').config();
 const express = require('express');
+const fetch = require('node-fetch');
 const router = express.Router();
 const User = require('../models/User');
 const Transactions = require('../models/Transactions');
 const UserPayout = require('../models/UserPayout');
 const TransactionApproval = require('../models/transactionApproval');
-const axios = require('axios');
 
 const FLUTTERWAVE_API_URL = 'https://api.flutterwave.com/v3/transfers';
 
 // Route to initiate a transaction
 router.post('/initiate', async (req, res) => {
-    const { email, narration, amount } = req.body;
+    const { email, narration, amount, currency } = req.body;
 
-    if (!email || !narration || !amount) {
-        return res.status(400).json({ message: 'Email, narration, and amount are required.' });
+    if (!email || !narration || !amount || !currency) {
+        return res.status(400).json({ message: 'Email, narration, amount, and currency are required.' });
     }
 
     try {
@@ -43,7 +43,7 @@ router.post('/initiate', async (req, res) => {
             credit: 0,
             debit: amount,
             amount,
-            currency: payout.currency,
+            currency,
             status: 'Pending',
             balance: user.balance - amount,
         });
@@ -76,7 +76,7 @@ router.post('/approve/:transactionId', async (req, res) => {
 
             // Prepare Flutterwave request data
             let transferData = {};
-            switch (payout.currency) {
+            switch (transaction.currency) {
                 case 'USD':
                     transferData = {
                         account_bank: payout.account_bank,
@@ -127,7 +127,7 @@ router.post('/approve/:transactionId', async (req, res) => {
                         account_number: payout.account_number,
                         amount: transaction.amount,
                         narration: transaction.narration,
-                        currency: payout.currency,
+                        currency: transaction.currency,
                         destination_branch_code: payout.destination_branch_code,
                         beneficiary_name: payout.beneficiary_name
                     };
@@ -140,7 +140,7 @@ router.post('/approve/:transactionId', async (req, res) => {
                         beneficiary_name: payout.beneficiary_name,
                         amount: transaction.amount,
                         narration: transaction.narration,
-                        currency: payout.currency,
+                        currency: transaction.currency,
                         debit_currency: payout.debit_currency,
                         destination_branch_code: payout.destination_branch_code
                     };
@@ -150,17 +150,20 @@ router.post('/approve/:transactionId', async (req, res) => {
             }
 
             try {
-                // Call Flutterwave API to initiate the payout
-                const response = await axios.post(FLUTTERWAVE_API_URL, transferData, {
+                // Call Flutterwave API to initiate the payout using node-fetch
+                const response = await fetch(FLUTTERWAVE_API_URL, {
+                    method: 'POST',
                     headers: {
                         Authorization: `Bearer ${process.env.SECRET_KEY}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify(transferData)
                 });
 
-                console.log('Flutterwave API Response:', response.data); // Debug log
+                const responseData = await response.json();
+                console.log('Flutterwave API Response:', responseData); // Debug log
 
-                if (response.data.status === 'success') {
+                if (responseData.status === 'success') {
                     // Update transaction status to "Completed"
                     transaction.status = 'Completed';
                     await transaction.save();
@@ -172,17 +175,17 @@ router.post('/approve/:transactionId', async (req, res) => {
                         adminComments
                     });
 
-                    res.status(200).json({ message: 'Transaction approved and payout initiated.', response: response.data });
+                    res.status(200).json({ message: 'Transaction approved and payout initiated.', response: responseData });
                 } else {
                     res.status(400).json({
                         message: 'Failed to initiate payout.',
-                        error: response.data.message || 'Unknown error',
-                        response: response.data
+                        error: responseData.message || 'Unknown error',
+                        response: responseData
                     });
                 }
             } catch (apiError) {
-                console.error('Flutterwave API Error:', apiError.response?.data || apiError.message);
-                res.status(500).json({ message: 'Error communicating with payment gateway.', error: apiError.response?.data || apiError.message });
+                console.error('Flutterwave API Error:', apiError);
+                res.status(500).json({ message: 'Error communicating with payment gateway.', error: apiError.message });
             }
         } else {
             // Update transaction status to "Rejected"
