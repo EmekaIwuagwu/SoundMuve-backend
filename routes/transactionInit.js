@@ -14,6 +14,7 @@ const FLUTTERWAVE_API_URL = 'https://api.flutterwave.com/v3/transfers';
 router.post('/initiate', async (req, res) => {
     const { email, narration, amount, currency } = req.body;
 
+    // Validate input
     if (!email || !narration || !amount || !currency) {
         return res.status(400).json({ message: 'Email, narration, amount, and currency are required.' });
     }
@@ -52,6 +53,7 @@ router.post('/initiate', async (req, res) => {
         res.status(201).json({ message: 'Transaction initiated and saved for approval.', transaction });
 
     } catch (error) {
+        console.error('Error initiating transaction:', error);
         res.status(500).json({ message: error.message });
     }
 });
@@ -90,8 +92,8 @@ router.post('/approve/:transactionId', async (req, res) => {
                         beneficiary_name: payout.beneficiary_name,
                         meta: {
                             beneficiary_name: payout.beneficiary_name,
-                            beneficiary_address: payout.beneficiary_address || '', // Use empty string if undefined
-                            beneficiary_country: payout.beneficiary_country || '' // Use empty string if undefined
+                            beneficiary_address: payout.beneficiary_address || '',
+                            beneficiary_country: payout.beneficiary_country || ''
                         }
                     };
                     break;
@@ -183,6 +185,7 @@ router.post('/approve/:transactionId', async (req, res) => {
 
                     res.status(200).json({ message: 'Transaction approved and payout initiated.', response: responseData });
                 } else {
+                    console.error('Failed to initiate payout:', responseData.message); // Debug log
                     res.status(400).json({
                         message: 'Failed to initiate payout.',
                         error: responseData.message || 'Unknown error',
@@ -208,7 +211,9 @@ router.post('/approve/:transactionId', async (req, res) => {
             res.status(200).json({ message: 'Transaction rejected.' });
         }
     } catch (error) {
+        console.error('Error approving transaction:', error);
         res.status(500).json({ message: error.message });
     }
 });
+
 module.exports = router;
