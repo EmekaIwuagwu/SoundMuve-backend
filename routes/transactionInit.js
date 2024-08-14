@@ -2,8 +2,8 @@
 require('dotenv').config()
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
-const Transactions = require('../models/transaction');
+const User = require('../models/User');
+const Transactions = require('../models/Transactions');
 const UserPayout = require('../models/userPayout');
 const TransactionApproval = require('../models/transactionApproval');
 const axios = require('axios');
