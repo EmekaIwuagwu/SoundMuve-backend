@@ -217,7 +217,7 @@ router.post('/approve/:transactionId', checkToken, async (req, res) => {
     }
 });
 
-router.post('/initiatePaypalTransaction',checkToken, async (req, res) => {
+router.post('/initiatePaypalTransaction', checkToken, async (req, res) => {
     try {
         const { narration, currency, amount } = req.body;
 
@@ -253,7 +253,7 @@ router.post('/initiatePaypalTransaction',checkToken, async (req, res) => {
 });
 
 // Endpoint to approve or reject a transaction
-router.post('/approvePaypalTransaction/:id',checkToken, async (req, res) => {
+router.post('/approvePaypalTransaction/:id', checkToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { approved, adminComments } = req.body;
@@ -339,7 +339,7 @@ router.post('/approvePaypalTransaction/:id',checkToken, async (req, res) => {
     }
 });
 
-router.get('/exchange-rate',checkToken, async (req, res) => {
+router.get('/exchange-rate', checkToken, async (req, res) => {
     const { amount, currency } = req.query;
 
     if (!amount || !currency) {
@@ -370,6 +370,83 @@ router.get('/exchange-rate',checkToken, async (req, res) => {
     } catch (error) {
         console.error('Error fetching exchange rate:', error);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+route.post('/PaypalPayoutDetails', checkToken, async (req, res) => {
+    try {
+        const { email, beneficiary_name, currency } = req.body;
+
+        // Check if a payout with the same email already exists
+        const existingPayout = await UserPayout.findOne({ email });
+        if (existingPayout) {
+            return res.status(400).json({ message: 'Payout details for this email already exist.' });
+        }
+
+        const payout = new UserPayout({
+            email,
+            beneficiary_name,
+            currency
+        });
+
+        await payout.save();
+        res.status(201).json(payout);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+});
+
+// Endpoint to read PayPal payout details
+route.get('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+    try {
+        const { email } = req.params;
+
+        const payout = await UserPayout.findOne({ email });
+        if (!payout) {
+            return res.status(404).json({ message: 'Payout details not found.' });
+        }
+
+        res.status(200).json(payout);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+});
+
+// Endpoint to update PayPal payout details
+route.put('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+    try {
+        const { email } = req.params;
+        const { beneficiary_name, currency } = req.body;
+
+        const updatedPayout = await UserPayout.findOneAndUpdate(
+            { email },
+            { beneficiary_name, currency },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedPayout) {
+            return res.status(404).json({ message: 'Payout details not found.' });
+        }
+
+        res.status(200).json(updatedPayout);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
+    }
+});
+
+// Endpoint to delete PayPal payout details
+route.delete('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+    try {
+        const { email } = req.params;
+
+        const deletedPayout = await UserPayout.findOneAndDelete({ email });
+        if (!deletedPayout) {
+            return res.status(404).json({ message: 'Payout details not found.' });
+        }
+
+        res.status(200).json({ message: 'Payout details deleted successfully.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error });
     }
 });
 
