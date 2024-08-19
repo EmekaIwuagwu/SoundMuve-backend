@@ -29,7 +29,18 @@ const retryPayment = async (endpoint, transferData, jwtToken) => {
     }
 };
 
-router.post('/initiate', async (req, res) => {
+const checkToken = (req, res, next) => {
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+    next();
+};
+
+router.post('/initiate', checkToken, async (req, res) => {
     const { email, narration, amount, currency } = req.body;
 
     // Validate input
@@ -77,7 +88,7 @@ router.post('/initiate', async (req, res) => {
 });
 
 // Route to approve a transaction
-router.post('/approve/:transactionId', async (req, res) => {
+router.post('/approve/:transactionId', checkToken, async (req, res) => {
     const { transactionId } = req.params;
     const { approved, adminComments } = req.body;
 
@@ -206,7 +217,7 @@ router.post('/approve/:transactionId', async (req, res) => {
     }
 });
 
-router.post('/initiatePaypalTransaction', async (req, res) => {
+router.post('/initiatePaypalTransaction',checkToken, async (req, res) => {
     try {
         const { narration, currency, amount } = req.body;
 
@@ -242,7 +253,7 @@ router.post('/initiatePaypalTransaction', async (req, res) => {
 });
 
 // Endpoint to approve or reject a transaction
-router.post('/approvePaypalTransaction/:id', async (req, res) => {
+router.post('/approvePaypalTransaction/:id',checkToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { approved, adminComments } = req.body;
@@ -324,6 +335,40 @@ router.post('/approvePaypalTransaction/:id', async (req, res) => {
         }
     } catch (error) {
         console.error('Error approving transaction:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+router.get('/exchange-rate',checkToken, async (req, res) => {
+    const { amount, currency } = req.query;
+
+    if (!amount || !currency) {
+        return res.status(400).json({ error: 'Missing amount or currency' });
+    }
+
+    try {
+        // Validate amount and currency
+        if (isNaN(amount) || !currency.match(/^[A-Z]{3}$/)) {
+            return res.status(400).json({ error: 'Invalid amount or currency format' });
+        }
+
+        const response = await fetch(`https://api.flutterwave.com/v3/transfers/rates?amount=${amount}&destination_currency=${currency}&source_currency=USD`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${process.env.SECRET_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            return res.status(response.status).json({ error });
+        }
+
+        const data = await response.json();
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Error fetching exchange rate:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
