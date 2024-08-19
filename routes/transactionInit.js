@@ -206,12 +206,31 @@ router.post('/approve/:transactionId', async (req, res) => {
     }
 });
 
-router.post('/initiatePaypalTransaction', async (req, res) => {
+app.post('/initiatePaypalTransaction', async (req, res) => {
     try {
-        const { email, narration, credit, debit, amount, currency, balance } = req.body;
+        const { narration, currency, amount } = req.body;
 
+        // Fetch user and payout information
+        const user = await User.findOne({ email: req.body.email });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const payoutDetails = await UserPayout.findOne({ email: user.email });
+        if (!payoutDetails) return res.status(404).json({ error: 'Payout details not found' });
+
+        // Calculate updated balance
+        const updatedBalance = user.balance - amount;
+        if (updatedBalance < 0) return res.status(400).json({ error: 'Insufficient balance' });
+
+        // Create a new transaction
         const transaction = new Transaction({
-            email, narration, credit, debit, amount, currency, balance, status: 'PENDING'
+            email: user.email,
+            narration,
+            credit: 0,
+            debit: amount,
+            amount,
+            currency,
+            balance: updatedBalance,
+            status: 'PENDING',
         });
         await transaction.save();
 
@@ -223,7 +242,7 @@ router.post('/initiatePaypalTransaction', async (req, res) => {
 });
 
 // Endpoint to approve or reject a transaction
-router.post('/aprovePaypalTransaction/:id', async (req, res) => {
+app.post('/approvePaypalTransaction/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { approved, adminComments } = req.body;
@@ -231,28 +250,20 @@ router.post('/aprovePaypalTransaction/:id', async (req, res) => {
         const transactionApproval = new TransactionApproval({
             transactionId: id,
             approved,
-            adminComments
+            adminComments,
         });
         await transactionApproval.save();
 
         const transaction = await Transaction.findById(id);
-        if (!transaction) {
-            return res.status(404).json({ error: 'Transaction not found' });
-        }
-
-        transaction.status = approved ? 'APPROVED' : 'REJECTED';
-        await transaction.save();
+        if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
 
         if (approved) {
-            // Fetch payout details
-            const payoutDetails = await UserPayout.findOne({ email: transaction.email });
-            if (!payoutDetails) {
-                return res.status(404).json({ error: 'Payout details not found' });
-            }
+            transaction.status = 'APPROVED';
+            await transaction.save();
 
             // Get Access Token
-            const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
-            const tokenResponse = await fetch(process.env.PAYPAL_OAUTH_URL, {
+            const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString('base64');
+            const tokenResponse = await fetch(PAYPAL_OAUTH_URL, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Basic ${auth}`,
@@ -285,12 +296,12 @@ router.post('/aprovePaypalTransaction/:id', async (req, res) => {
                         },
                         note: transaction.narration,
                         sender_item_id: `item_${Date.now()}`,
-                        receiver: payoutDetails.email
+                        receiver: transaction.email
                     }
                 ]
             };
 
-            const payoutResponse = await fetch(process.env.PAYPAL_PAYOUTS_URL, {
+            const payoutResponse = await fetch(PAYPAL_PAYOUTS_URL, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -307,6 +318,8 @@ router.post('/aprovePaypalTransaction/:id', async (req, res) => {
             const payoutResult = await payoutResponse.json();
             res.status(200).json({ message: 'Payout successful', payoutResult });
         } else {
+            transaction.status = 'REJECTED';
+            await transaction.save();
             res.status(200).json({ message: 'Transaction rejected' });
         }
     } catch (error) {
