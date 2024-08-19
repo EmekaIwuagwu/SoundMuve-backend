@@ -378,11 +378,11 @@ router.post('/PaypalPayoutDetails', checkToken, async (req, res) => {
         const { email, beneficiary_name, currency } = req.body;
 
         // Check if a payout with the same email already exists
-        const existingPayout = await UserPayout.findOne({ email });
+        /*const existingPayout = await UserPayout.findOne({ email });
         if (existingPayout) {
             return res.status(400).json({ message: 'Payout details for this email already exist.' });
         }
-
+        */
         const payout = new UserPayout({
             email,
             beneficiary_name,
