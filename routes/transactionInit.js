@@ -262,7 +262,7 @@ router.post('/approvePaypalTransaction/:id', async (req, res) => {
             await transaction.save();
 
             // Get Access Token
-            const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString('base64');
+            const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
             const tokenResponse = await fetch(PAYPAL_OAUTH_URL, {
                 method: 'POST',
                 headers: {
@@ -301,7 +301,7 @@ router.post('/approvePaypalTransaction/:id', async (req, res) => {
                 ]
             };
 
-            const payoutResponse = await fetch(PAYPAL_PAYOUTS_URL, {
+            const payoutResponse = await fetch(process.env.PAYPAL_PAYOUTS_URL, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
