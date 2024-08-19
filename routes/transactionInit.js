@@ -373,7 +373,7 @@ router.get('/exchange-rate', checkToken, async (req, res) => {
     }
 });
 
-route.post('/PaypalPayoutDetails', checkToken, async (req, res) => {
+router.post('/PaypalPayoutDetails', checkToken, async (req, res) => {
     try {
         const { email, beneficiary_name, currency } = req.body;
 
@@ -397,7 +397,7 @@ route.post('/PaypalPayoutDetails', checkToken, async (req, res) => {
 });
 
 // Endpoint to read PayPal payout details
-route.get('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+router.get('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
     try {
         const { email } = req.params;
 
@@ -413,7 +413,7 @@ route.get('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
 });
 
 // Endpoint to update PayPal payout details
-route.put('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+router.put('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
     try {
         const { email } = req.params;
         const { beneficiary_name, currency } = req.body;
@@ -435,7 +435,7 @@ route.put('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
 });
 
 // Endpoint to delete PayPal payout details
-route.delete('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+router.delete('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
     try {
         const { email } = req.params;
 
