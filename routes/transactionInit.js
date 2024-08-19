@@ -413,13 +413,13 @@ router.get('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
 });
 
 // Endpoint to update PayPal payout details
-router.put('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+router.put('/PaypalPayoutDetails/:id/:email', checkToken, async (req, res) => {
     try {
-        const { email } = req.params;
+        const { id, email } = req.params;
         const { beneficiary_name, currency } = req.body;
 
         const updatedPayout = await UserPayout.findOneAndUpdate(
-            { email },
+            { _id: id, email },
             { beneficiary_name, currency },
             { new: true, runValidators: true }
         );
@@ -435,11 +435,11 @@ router.put('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
 });
 
 // Endpoint to delete PayPal payout details
-router.delete('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
+router.delete('/PaypalPayoutDetails/:id/:email', checkToken, async (req, res) => {
     try {
-        const { email } = req.params;
+        const { id, email } = req.params;
 
-        const deletedPayout = await UserPayout.findOneAndDelete({ email });
+        const deletedPayout = await UserPayout.findOneAndDelete({ _id: id, email });
         if (!deletedPayout) {
             return res.status(404).json({ message: 'Payout details not found.' });
         }
@@ -449,6 +449,7 @@ router.delete('/PaypalPayoutDetails/:email', checkToken, async (req, res) => {
         res.status(500).json({ message: 'Server Error', error });
     }
 });
+
 
 
 module.exports = router;
