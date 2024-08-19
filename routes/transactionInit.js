@@ -206,7 +206,7 @@ router.post('/approve/:transactionId', async (req, res) => {
     }
 });
 
-app.post('/initiatePaypalTransaction', async (req, res) => {
+router.post('/initiatePaypalTransaction', async (req, res) => {
     try {
         const { narration, currency, amount } = req.body;
 
@@ -242,7 +242,7 @@ app.post('/initiatePaypalTransaction', async (req, res) => {
 });
 
 // Endpoint to approve or reject a transaction
-app.post('/approvePaypalTransaction/:id', async (req, res) => {
+router.post('/approvePaypalTransaction/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { approved, adminComments } = req.body;
