@@ -222,7 +222,7 @@ router.post('/initiatePaypalTransaction', async (req, res) => {
         if (updatedBalance < 0) return res.status(400).json({ error: 'Insufficient balance' });
 
         // Create a new transaction
-        const transaction = new Transaction({
+        const transaction = new Transactions({
             email: user.email,
             narration,
             credit: 0,
@@ -254,7 +254,7 @@ router.post('/approvePaypalTransaction/:id', async (req, res) => {
         });
         await transactionApproval.save();
 
-        const transaction = await Transaction.findById(id);
+        const transaction = await Transactions.findById(id);
         if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
 
         if (approved) {
