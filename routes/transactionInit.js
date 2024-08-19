@@ -263,7 +263,7 @@ router.post('/approvePaypalTransaction/:id', async (req, res) => {
 
             // Get Access Token
             const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
-            const tokenResponse = await fetch(PAYPAL_OAUTH_URL, {
+            const tokenResponse = await fetch(process.env.PAYPAL_OAUTH_URL, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Basic ${auth}`,
