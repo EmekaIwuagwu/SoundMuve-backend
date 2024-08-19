@@ -77,7 +77,6 @@ router.post('/initiate', async (req, res) => {
 });
 
 // Route to approve a transaction
-// Route to approve a transaction
 router.post('/approve/:transactionId', async (req, res) => {
     const { transactionId } = req.params;
     const { approved, adminComments } = req.body;
@@ -204,6 +203,115 @@ router.post('/approve/:transactionId', async (req, res) => {
     } catch (error) {
         console.error('Error approving transaction:', error);
         res.status(500).json({ message: error.message });
+    }
+});
+
+router.post('/initiatePaypalTransaction', async (req, res) => {
+    try {
+        const { email, narration, credit, debit, amount, currency, balance } = req.body;
+
+        const transaction = new Transaction({
+            email, narration, credit, debit, amount, currency, balance, status: 'PENDING'
+        });
+        await transaction.save();
+
+        res.status(201).json({ message: 'Transaction initiated successfully', transaction });
+    } catch (error) {
+        console.error('Error initiating transaction:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// Endpoint to approve or reject a transaction
+router.post('/aprovePaypalTransaction/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { approved, adminComments } = req.body;
+
+        const transactionApproval = new TransactionApproval({
+            transactionId: id,
+            approved,
+            adminComments
+        });
+        await transactionApproval.save();
+
+        const transaction = await Transaction.findById(id);
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        transaction.status = approved ? 'APPROVED' : 'REJECTED';
+        await transaction.save();
+
+        if (approved) {
+            // Fetch payout details
+            const payoutDetails = await UserPayout.findOne({ email: transaction.email });
+            if (!payoutDetails) {
+                return res.status(404).json({ error: 'Payout details not found' });
+            }
+
+            // Get Access Token
+            const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
+            const tokenResponse = await fetch(process.env.PAYPAL_OAUTH_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${auth}`,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'grant_type=client_credentials'
+            });
+
+            if (!tokenResponse.ok) {
+                const error = await tokenResponse.json();
+                return res.status(500).json({ error });
+            }
+
+            const tokenData = await tokenResponse.json();
+            const accessToken = tokenData.access_token;
+
+            // Create Payout
+            const payoutData = {
+                sender_batch_header: {
+                    sender_batch_id: `batch_${Date.now()}`,
+                    email_subject: "You have a payout!",
+                    email_message: "You have received a payout! Thanks for using our service!"
+                },
+                items: [
+                    {
+                        recipient_type: "EMAIL",
+                        amount: {
+                            value: transaction.amount,
+                            currency: transaction.currency
+                        },
+                        note: transaction.narration,
+                        sender_item_id: `item_${Date.now()}`,
+                        receiver: payoutDetails.email
+                    }
+                ]
+            };
+
+            const payoutResponse = await fetch(process.env.PAYPAL_PAYOUTS_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payoutData)
+            });
+
+            if (!payoutResponse.ok) {
+                const error = await payoutResponse.json();
+                return res.status(500).json({ error });
+            }
+
+            const payoutResult = await payoutResponse.json();
+            res.status(200).json({ message: 'Payout successful', payoutResult });
+        } else {
+            res.status(200).json({ message: 'Transaction rejected' });
+        }
+    } catch (error) {
+        console.error('Error approving transaction:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
