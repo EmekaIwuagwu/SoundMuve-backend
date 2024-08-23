@@ -18,6 +18,7 @@ const recordLabel = require("./routes/RecordLabel");
 const payoutDetails = require("./routes/PayoutDetails");
 const currency = require("./routes/CurrencyManager");
 const initiateTransaction = require("./routes/transactionInit");
+const analytics = require("./routes/Analytics");
 
 app.use(cors())
 
@@ -61,6 +62,7 @@ app.use("/api/currency",currency);
 app.use("/api/recordLabel",recordLabel);
 app.use("/api/payoutDetails",payoutDetails);
 app.use("/api/transactionInit",initiateTransaction);
+app.use("/api/analytics",analytics);
 
 
 app.get("/", function (req, res) {
