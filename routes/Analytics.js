@@ -271,4 +271,63 @@ router.post('/analytics/save', async (req, res) => {
     }
 });
 
+// Update analytics data for a specific entry
+router.put('/analytics/update', async (req, res) => {
+    try {
+        const { id, email, artist_id, song_name, release_date, type, artist_name, revenue, streams, stream_time } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ error: 'ID of the analytics data is required' });
+        }
+
+        const updatedData = {};
+
+        // Only update fields that are provided
+        if (email) updatedData.email = email;
+        if (artist_id) updatedData.artist_id = artist_id;
+        if (song_name) updatedData.song_name = song_name;
+        if (release_date) updatedData.release_date = release_date;
+        if (type) updatedData.type = type;
+        if (artist_name) updatedData.artist_name = artist_name;
+        if (revenue !== undefined) updatedData.revenue = revenue;
+        if (streams !== undefined) updatedData.streams = streams;
+        if (stream_time !== undefined) updatedData.stream_time = stream_time;
+
+        const updatedAnalytics = await Analytics.findByIdAndUpdate(id, updatedData, { new: true });
+
+        if (!updatedAnalytics) {
+            return res.status(404).json({ error: 'Analytics data not found' });
+        }
+
+        res.json(updatedAnalytics);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update analytics data' });
+    }
+});
+
+
+// Delete analytics data for a specific entry
+router.delete('/analytics/delete', async (req, res) => {
+    try {
+        const { id } = req.body;
+
+        if (!id) {
+            return res.status(400).json({ error: 'ID of the analytics data is required' });
+        }
+
+        const deletedAnalytics = await Analytics.findByIdAndDelete(id);
+
+        if (!deletedAnalytics) {
+            return res.status(404).json({ error: 'Analytics data not found' });
+        }
+
+        res.json({ message: 'Analytics data deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete analytics data' });
+    }
+});
+
+
 module.exports = router;
