@@ -19,6 +19,7 @@ const payoutDetails = require("./routes/PayoutDetails");
 const currency = require("./routes/CurrencyManager");
 const initiateTransaction = require("./routes/transactionInit");
 const analytics = require("./routes/Analytics");
+const analyticsRoutes = require("./routes/AnalyticsManager");
 
 app.use(cors())
 
@@ -63,6 +64,7 @@ app.use("/api/recordLabel",recordLabel);
 app.use("/api/payoutDetails",payoutDetails);
 app.use("/api/transactionInit",initiateTransaction);
 app.use("/api/analytics",analytics);
+app.use("/api/analyticsManager",analyticsRoutes);
 
 
 app.get("/", function (req, res) {
