@@ -92,20 +92,27 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         let model;
         if (type === 'album') model = AlbumAnalytics;
         else if (type === 'single') model = SingleAnalytics;
-        else return res.status(400).json({ message: 'Invalid type provided. Please use "album" or "single".' });
+        else return res.status(400).json({ message: 'Invalid type' });
 
         const results = await model.aggregate([
             { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
             { $group: {
                 _id: null,
                 totalAppleRevenue: { $sum: '$revenue.apple' },
-                totalSpotifyRevenue: { $sum: '$revenue.spotify' }
+                totalSpotifyRevenue: { $sum: '$revenue.spotify' },
+                totalAppleStreams: { $sum: '$stream.apple' },
+                totalSpotifyStreams: { $sum: '$stream.spotify' }
             }}
         ]);
 
-        res.json({ message: 'Revenue data retrieved successfully!', data: results[0] || { totalAppleRevenue: 0, totalSpotifyRevenue: 0 } });
+        res.json(results[0] || {
+            totalAppleRevenue: 0,
+            totalSpotifyRevenue: 0,
+            totalAppleStreams: 0,
+            totalSpotifyStreams: 0
+        });
     } catch (error) {
-        res.status(400).json({ message: 'Failed to retrieve revenue data.', error: error.message });
+        res.status(400).json({ message: error.message });
     }
 });
 
