@@ -5,17 +5,23 @@ const jwt = require('jsonwebtoken');
 
 // Middleware to check token
 const checkToken = (req, res, next) => {
-    if (
-        !req.headers.authorization ||
-        !req.headers.authorization.startsWith("Bearer ") ||
-        !req.headers.authorization.split(" ")[1]
-    ) {
-        return res.status(422).json({ message: "Please Provide Token!" });
+    // Get token from header
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(422).json({ message: 'Please Provide Token!' });
     }
-    // Verify the token
-    const token = req.headers.authorization.split(" ")[1];
-    jwt.verify(token, 'your_jwt_secret', (err, decoded) => {
-        if (err) return res.status(401).json({ message: 'Invalid Token' });
+
+    // Extract token
+    const token = authHeader.split(' ')[1];
+
+    // Verify token
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid or Expired Token!' });
+        }
+
+        // Attach user info to request object
         req.user = decoded;
         next();
     });
