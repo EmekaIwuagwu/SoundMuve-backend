@@ -9,7 +9,7 @@ const checkToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(422).json({ message: 'Please Provide Token!' });
+        return res.status(422).json({ message: 'Please provide a Bearer token!' });
     }
 
     // Extract token
@@ -18,7 +18,7 @@ const checkToken = (req, res, next) => {
     // Verify token
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(403).json({ message: 'Invalid or Expired Token!' });
+            return res.status(403).json({ message: 'Invalid or expired token!' });
         }
 
         // Attach user info to request object
@@ -35,9 +35,9 @@ router.post('/album-analytics', async (req, res) => {
     try {
         const albumAnalytics = new AlbumAnalytics(req.body);
         await albumAnalytics.save();
-        res.status(201).json(albumAnalytics);
+        res.status(201).json({ message: 'Album Analytics created successfully!', data: albumAnalytics });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Failed to create Album Analytics.', error: error.message });
     }
 });
 
@@ -45,10 +45,10 @@ router.post('/album-analytics', async (req, res) => {
 router.get('/album-analytics/:id', async (req, res) => {
     try {
         const albumAnalytics = await AlbumAnalytics.findById(req.params.id);
-        if (!albumAnalytics) return res.status(404).json({ message: 'Not Found' });
-        res.json(albumAnalytics);
+        if (!albumAnalytics) return res.status(404).json({ message: 'Album Analytics not found.' });
+        res.json({ message: 'Album Analytics retrieved successfully!', data: albumAnalytics });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Failed to retrieve Album Analytics.', error: error.message });
     }
 });
 
@@ -56,10 +56,10 @@ router.get('/album-analytics/:id', async (req, res) => {
 router.put('/album-analytics/:id', async (req, res) => {
     try {
         const albumAnalytics = await AlbumAnalytics.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!albumAnalytics) return res.status(404).json({ message: 'Not Found' });
-        res.json(albumAnalytics);
+        if (!albumAnalytics) return res.status(404).json({ message: 'Album Analytics not found.' });
+        res.json({ message: 'Album Analytics updated successfully!', data: albumAnalytics });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Failed to update Album Analytics.', error: error.message });
     }
 });
 
@@ -67,10 +67,10 @@ router.put('/album-analytics/:id', async (req, res) => {
 router.delete('/album-analytics/:id', async (req, res) => {
     try {
         const albumAnalytics = await AlbumAnalytics.findByIdAndDelete(req.params.id);
-        if (!albumAnalytics) return res.status(404).json({ message: 'Not Found' });
-        res.json({ message: 'Deleted' });
+        if (!albumAnalytics) return res.status(404).json({ message: 'Album Analytics not found.' });
+        res.json({ message: 'Album Analytics deleted successfully!' });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Failed to delete Album Analytics.', error: error.message });
     }
 });
 
@@ -92,7 +92,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         let model;
         if (type === 'album') model = AlbumAnalytics;
         else if (type === 'single') model = SingleAnalytics;
-        else return res.status(400).json({ message: 'Invalid type' });
+        else return res.status(400).json({ message: 'Invalid type provided. Please use "album" or "single".' });
 
         const results = await model.aggregate([
             { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
@@ -103,9 +103,9 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
             }}
         ]);
 
-        res.json(results[0] || { totalAppleRevenue: 0, totalSpotifyRevenue: 0 });
+        res.json({ message: 'Revenue data retrieved successfully!', data: results[0] || { totalAppleRevenue: 0, totalSpotifyRevenue: 0 } });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Failed to retrieve revenue data.', error: error.message });
     }
 });
 
