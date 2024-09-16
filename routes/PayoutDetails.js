@@ -26,11 +26,14 @@ router.post('/payout-details', checkToken, async (req, res) => {
     try {
         const { currency, email, meta } = req.body;
 
-        if (!currency || !email || !meta) {
-            return res.status(400).json({ message: 'Currency, email, and meta are required.' });
+        // Check for basic required fields
+        if (!currency || !email) {
+            return res.status(400).json({ message: 'Currency and email are required.' });
         }
 
+        // Define required fields based on currency
         let requiredFields = [];
+        let isMetaRequired = false;
 
         switch (currency) {
             case 'USD':
@@ -38,6 +41,7 @@ router.post('/payout-details', checkToken, async (req, res) => {
                     'account_number', 'routing_number', 'swift_code',
                     'bank_name', 'beneficiary_name', 'beneficiary_address', 'beneficiary_country'
                 ];
+                isMetaRequired = true;
                 break;
             case 'EUR':
                 requiredFields = [
@@ -45,6 +49,7 @@ router.post('/payout-details', checkToken, async (req, res) => {
                     'bank_name', 'beneficiary_name', 'beneficiary_country',
                     'postal_code', 'street_number', 'street_name', 'city'
                 ];
+                isMetaRequired = true;
                 break;
             case 'NGN':
                 requiredFields = [
@@ -71,15 +76,20 @@ router.post('/payout-details', checkToken, async (req, res) => {
                 return res.status(400).json({ message: 'Unsupported currency' });
         }
 
-        if (['USD', 'EUR'].includes(currency)) {
-            // Validate that all required fields are present in meta
+        // Validate the meta field if required
+        if (isMetaRequired) {
+            if (!meta || !Array.isArray(meta) || !meta[0]) {
+                return res.status(400).json({ message: 'Meta is required and should be an array with at least one object.' });
+            }
+
+            // Validate that all required fields are present in meta[0]
             for (const field of requiredFields) {
                 if (!meta[0][field]) {
                     return res.status(400).json({ message: `${field} is required for currency ${currency}` });
                 }
             }
         } else {
-            // Validate for other currencies directly from request body
+            // Validate that all required fields are present in req.body for other currencies
             for (const field of requiredFields) {
                 if (!req.body[field]) {
                     return res.status(400).json({ message: `${field} is required for currency ${currency}` });
@@ -89,7 +99,7 @@ router.post('/payout-details', checkToken, async (req, res) => {
 
         // Prepare the payout data based on the currency and meta fields
         const payoutData = { currency, email };
-        if (['USD', 'EUR'].includes(currency)) {
+        if (isMetaRequired) {
             Object.assign(payoutData, meta[0]);
         } else {
             requiredFields.forEach(field => {
@@ -109,6 +119,7 @@ router.post('/payout-details', checkToken, async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
 
 // Endpoint to show payouts by email
 router.get('/payouts/:email', checkToken, async (req, res) => {
