@@ -116,4 +116,38 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
     }
 });
 
+
+router.get('/analytics/revenue-yearly', async (req, res) => {
+    try {
+        const { type } = req.query; // 'album' or 'single'
+        const currentDate = new Date();
+        const startOfYear = new Date(currentDate.setMonth(currentDate.getMonth() - 12));
+
+        let model;
+        if (type === 'album') model = AlbumAnalytics;
+        else if (type === 'single') model = SingleAnalytics;
+        else return res.status(400).json({ message: 'Invalid type' });
+
+        const results = await model.aggregate([
+            { $match: { created_at: { $gte: startOfYear } } },
+            { $group: {
+                _id: null,
+                totalAppleRevenue: { $sum: '$revenue.apple' },
+                totalSpotifyRevenue: { $sum: '$revenue.spotify' },
+                totalAppleStreams: { $sum: '$stream.apple' },
+                totalSpotifyStreams: { $sum: '$stream.spotify' }
+            }}
+        ]);
+
+        res.json(results[0] || {
+            totalAppleRevenue: 0,
+            totalSpotifyRevenue: 0,
+            totalAppleStreams: 0,
+            totalSpotifyStreams: 0
+        });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
 module.exports = router;
