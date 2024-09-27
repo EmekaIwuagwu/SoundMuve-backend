@@ -21,6 +21,7 @@ const initiateTransaction = require("./routes/transactionInit");
 const analytics = require("./routes/Analytics");
 const analyticsRoutes = require("./routes/AnalyticsManager");
 const kycRoutes = require("./routes/kycRoutes");
+const search = require("./routes/searchRoutes");
 
 app.use(cors())
 
@@ -67,6 +68,8 @@ app.use("/api/transactionInit",initiateTransaction);
 app.use("/api/analytics",analytics);
 app.use("/api/analyticsManager",analyticsRoutes);
 app.use("/api/kyc",kycRoutes);
+app.use("/api/search",search);
+
 
 
 app.get("/", function (req, res) {
