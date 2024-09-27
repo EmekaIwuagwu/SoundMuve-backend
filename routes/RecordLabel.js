@@ -200,5 +200,47 @@ router.get('/artistsList', validateToken, async (req, res) => {
     }
 });
 
+router.get('/artistsList', validateToken, async (req, res) => {
+    const recordLabelemail = req.query.recordLabelemail;
+
+    if (!recordLabelemail) {
+        return res.status(400).send({ message: 'recordLabelemail query parameter is required' });
+    }
+
+    try {
+        const artists = await ArtistForRecordLabel.find({ recordLabelemail });
+
+        if (!artists || artists.length === 0) {
+            return res.status(200).json({ artists: [], totalSongs: 0 });
+        }
+
+        let totalSongsByLabel = 0;
+
+        const artistsWithDetails = await Promise.all(
+            artists.map(async (artist) => {
+                const songCount = await Song.countDocuments({ email: artist.email });
+                totalSongsByLabel += songCount;
+
+                return {
+                    artistName: artist.artistName,
+                    email: artist.email,
+                    phoneNumber: artist.phoneNumber,
+                    country: artist.country,
+                    gender: artist.gender,
+                    artistAvatarUrl: artist.artistAvatarUrl,
+                    songCount: songCount,
+                };
+            })
+        );
+
+        res.status(200).json({
+            artists: artistsWithDetails,
+            totalSongs: totalSongsByLabel,
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 
 module.exports = router;
