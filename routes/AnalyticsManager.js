@@ -92,31 +92,36 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         let model;
         if (type === 'album') model = AlbumAnalytics;
         else if (type === 'single') model = SingleAnalytics;
-        else return res.status(400).json({ message: 'Invalid type' });
+        else return res.status(400).json({ message: 'Invalid type specified. Use "album" or "single".' });
 
-        const results = await model.aggregate([
-            { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
-            { $group: {
-                _id: null,
-                totalAppleRevenue: { $sum: '$revenue.apple' },
-                totalSpotifyRevenue: { $sum: '$revenue.spotify' },
-                totalAppleStreams: { $sum: '$stream.apple' },
-                totalSpotifyStreams: { $sum: '$stream.spotify' }
-            }}
+        const totalRevenue = await model.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+                }
+            },
+            {
+                $group: {
+                    _id: { $month: '$createdAt' },
+                    totalRevenue: { $sum: '$revenue' }
+                }
+            },
+            {
+                $project: {
+                    month: '$_id',
+                    totalRevenue: 1,
+                    _id: 0
+                }
+            }
         ]);
 
-        res.json(results[0] || {
-            totalAppleRevenue: 0,
-            totalSpotifyRevenue: 0,
-            totalAppleStreams: 0,
-            totalSpotifyStreams: 0
-        });
+        res.json({ message: 'Monthly revenue retrieved successfully!', data: totalRevenue });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(500).json({ message: 'Failed to retrieve revenue data.', error: error.message });
     }
 });
 
-
+// Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
     try {
         const { type } = req.query; // 'album' or 'single'
@@ -168,5 +173,6 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
 
 module.exports = router;
