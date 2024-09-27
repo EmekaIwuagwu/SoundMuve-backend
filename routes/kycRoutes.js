@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 
-
 const validateToken = (req, res, next) => {
     const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
     if (!token) {
@@ -21,13 +20,11 @@ router.post('/kyc/submit-phone', validateToken, async (req, res) => {
   }
 
   try {
-    // Check if user exists with the provided email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).send({ message: 'User not found' });
     }
 
-    // Update user's phone number
     user.phoneNumber = phoneNumber;
     await user.save();
 
@@ -39,7 +36,7 @@ router.post('/kyc/submit-phone', validateToken, async (req, res) => {
 
 // Step 2: Select Security Questions
 router.post('/kyc/select-questions', validateToken, async (req, res) => {
-  const { email, selectedQuestions } = req.body; // Assume selectedQuestions is an array of question strings
+  const { email, selectedQuestions } = req.body;
 
   if (!email || !selectedQuestions || selectedQuestions.length !== 3) {
     return res.status(400).send({ message: 'Email and exactly 3 questions are required' });
@@ -51,7 +48,6 @@ router.post('/kyc/select-questions', validateToken, async (req, res) => {
       return res.status(404).send({ message: 'User not found' });
     }
 
-    // Initialize security questions array
     user.securityQuestions = selectedQuestions.map((question) => ({
       question,
       answer: '',
@@ -66,7 +62,7 @@ router.post('/kyc/select-questions', validateToken, async (req, res) => {
 
 // Step 3: Provide Answers to Security Questions
 router.post('/kyc/submit-answers', validateToken, async (req, res) => {
-  const { email, answers } = req.body; // Assume answers is an array of answers in the correct order
+  const { email, answers } = req.body;
 
   if (!email || !answers || answers.length !== 3) {
     return res.status(400).send({ message: 'Email and exactly 3 answers are required' });
@@ -82,13 +78,42 @@ router.post('/kyc/submit-answers', validateToken, async (req, res) => {
       return res.status(400).send({ message: 'Security questions not found or incomplete' });
     }
 
-    // Assign answers to the security questions
     user.securityQuestions.forEach((questionObj, index) => {
       questionObj.answer = answers[index];
     });
 
     await user.save();
     res.status(200).send({ message: 'Security answers saved successfully' });
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
+// Step 4: Edit Security Questions
+router.put('/kyc/edit-questions', validateToken, async (req, res) => {
+  const { email, newQuestions } = req.body;
+
+  if (!email || !newQuestions || newQuestions.length !== 3) {
+    return res.status(400).send({ message: 'Email and exactly 3 new questions are required' });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).send({ message: 'User not found' });
+    }
+
+    if (!user.securityQuestions || user.securityQuestions.length !== 3) {
+      return res.status(400).send({ message: 'Security questions not set or incomplete' });
+    }
+
+    user.securityQuestions = newQuestions.map((question) => ({
+      question,
+      answer: '',
+    }));
+
+    await user.save();
+    res.status(200).send({ message: 'Security questions updated successfully and answers reset' });
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
