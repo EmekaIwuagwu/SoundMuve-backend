@@ -200,7 +200,7 @@ router.get('/artistsList', validateToken, async (req, res) => {
     }
 });
 
-router.get('/artistsList', validateToken, async (req, res) => {
+router.get('/artistsListinRL', validateToken, async (req, res) => {
     const recordLabelemail = req.query.recordLabelemail;
 
     if (!recordLabelemail) {
