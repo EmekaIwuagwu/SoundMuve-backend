@@ -4,6 +4,17 @@ const qs = require('qs');
 
 const router = express.Router();
 
+const checkToken = (req, res, next) => {
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer ") ||
+        !req.headers.authorization.split(" ")[1]
+    ) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+    next();
+};
+
 // Function to get Spotify access token
 const getSpotifyAccessToken = async () => {
   const tokenUrl = 'https://accounts.spotify.com/api/token';
@@ -22,7 +33,7 @@ const getSpotifyAccessToken = async () => {
 };
 
 // Endpoint to search artist by name on Spotify
-router.get('/search/spotify', async (req, res) => {
+router.get('/search/spotify', checkToken, async (req, res) => {
   const { artist } = req.query;
   if (!artist) {
     return res.status(400).send({ message: 'Artist name is required' });
