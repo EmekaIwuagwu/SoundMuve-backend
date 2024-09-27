@@ -121,7 +121,7 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
     try {
         const { type } = req.query; // 'album' or 'single'
         const currentDate = new Date();
-        const startOfYear = new Date(currentDate.setMonth(currentDate.getMonth() - 12));
+        const startOfYear = new Date(currentDate.getFullYear(), 0, 1); // Start of the current year
 
         let model;
         if (type === 'album') model = AlbumAnalytics;
@@ -135,18 +135,37 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                 totalAppleRevenue: { $sum: '$revenue.apple' },
                 totalSpotifyRevenue: { $sum: '$revenue.spotify' },
                 totalAppleStreams: { $sum: '$stream.apple' },
-                totalSpotifyStreams: { $sum: '$stream.spotify' }
+                totalSpotifyStreams: { $sum: '$stream.spotify' },
+                totalAppleStreamTime: { $sum: { $multiply: ['$stream.apple', 3] } }, // Assuming each stream takes 3 minutes as an example
+                totalSpotifyStreamTime: { $sum: { $multiply: ['$stream.spotify', 3] } } // Assuming each stream takes 3 minutes as an example
             }}
         ]);
 
-        res.json(results[0] || {
+        const response = results[0] || {
             totalAppleRevenue: 0,
             totalSpotifyRevenue: 0,
             totalAppleStreams: 0,
-            totalSpotifyStreams: 0
+            totalSpotifyStreams: 0,
+            totalAppleStreamTime: 0,
+            totalSpotifyStreamTime: 0
+        };
+
+        res.json({
+            analytics: {
+                apple: {
+                    revenue: response.totalAppleRevenue,
+                    streams: response.totalAppleStreams,
+                    streamTime: response.totalAppleStreamTime // Total stream time for Apple
+                },
+                spotify: {
+                    revenue: response.totalSpotifyRevenue,
+                    streams: response.totalSpotifyStreams,
+                    streamTime: response.totalSpotifyStreamTime // Total stream time for Spotify
+                }
+            }
         });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(500).json({ message: error.message });
     }
 });
 

@@ -13,6 +13,10 @@ const albumAnalyticsSchema = new mongoose.Schema({
         apple: { type: Number, required: true },
         spotify: { type: Number, required: true }
     },
+    streamTime: {
+        apple: { type: Number, required: true },  // Total stream time in seconds for Apple
+        spotify: { type: Number, required: true } // Total stream time in seconds for Spotify
+    },
     created_at: { type: Date, default: Date.now }
 });
 
@@ -30,6 +34,10 @@ const singleAnalyticsSchema = new mongoose.Schema({
     revenue: {
         apple: { type: Number, required: true },
         spotify: { type: Number, required: true }
+    },
+    streamTime: {
+        apple: { type: Number, required: true },  // Total stream time in seconds for Apple
+        spotify: { type: Number, required: true } // Total stream time in seconds for Spotify
     },
     created_at: { type: Date, default: Date.now }
 });
