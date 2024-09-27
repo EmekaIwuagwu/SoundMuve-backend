@@ -9,14 +9,6 @@ const NewsLetterSub = require("../models/NewsLetterSub");
 
 router.post("/send-newsLetter", async (req, res) => {
   try {
-    if (
-      !req.headers.authorization ||
-      !req.headers.authorization.startsWith("Bearer ") ||
-      !req.headers.authorization.split(" ")[1]
-    ) {
-      return res.status(422).json({ message: "Please Provide Token!" });
-    }
-
     const { subject, html, bcc } = req.body;
 
     if (!subject || !html || !bcc) {
@@ -50,14 +42,6 @@ router.post("/send-newsLetter", async (req, res) => {
 
 router.post("/subscribe-newsletter", async (req, res) => {
   try {
-    if (
-      !req.headers.authorization ||
-      !req.headers.authorization.startsWith("Bearer ") ||
-      !req.headers.authorization.split(" ")[1]
-    ) {
-      return res.status(422).json({ message: "Please Provide Token!" });
-    }
-
     const subNewsLetter = new NewsLetterSub({
       email: req.body.email
     });
