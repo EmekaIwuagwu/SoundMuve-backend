@@ -181,4 +181,76 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
 });
 
 
+router.post('/locations', async (req, res) => {
+    const { email, location, album_sold, single_sold, streams, total } = req.body;
+  
+    try {
+      const newLocation = new Location({
+        email,
+        location,
+        album_sold,
+        single_sold,
+        streams,
+        total
+      });
+  
+      await newLocation.save();
+      res.status(201).send({ message: 'Location created successfully', location: newLocation });
+    } catch (error) {
+      res.status(500).send({ message: error.message });
+    }
+  });
+  
+  // Get a location by email
+  router.get('/locations/:email', async (req, res) => {
+    const { email } = req.params;
+  
+    try {
+      const location = await Location.findOne({ email });
+      if (!location) {
+        return res.status(404).send({ message: 'Location not found for this email' });
+      }
+      res.status(200).send(location);
+    } catch (error) {
+      res.status(500).send({ message: error.message });
+    }
+  });
+  
+  // Update a location by email
+  router.put('/locations/:email', async (req, res) => {
+    const { email } = req.params;
+    const { location, album_sold, single_sold, streams, total } = req.body;
+  
+    try {
+      const updatedLocation = await Location.findOneAndUpdate(
+        { email },
+        { location, album_sold, single_sold, streams, total },
+        { new: true, runValidators: true }
+      );
+  
+      if (!updatedLocation) {
+        return res.status(404).send({ message: 'Location not found for this email' });
+      }
+      res.status(200).send({ message: 'Location updated successfully', location: updatedLocation });
+    } catch (error) {
+      res.status(500).send({ message: error.message });
+    }
+  });
+  
+  // Delete a location by email
+  router.delete('/locations/:email', async (req, res) => {
+    const { email } = req.params;
+  
+    try {
+      const deletedLocation = await Location.findOneAndDelete({ email });
+      if (!deletedLocation) {
+        return res.status(404).send({ message: 'Location not found for this email' });
+      }
+      res.status(200).send({ message: 'Location deleted successfully' });
+    } catch (error) {
+      res.status(500).send({ message: error.message });
+    }
+  });
+
+
 module.exports = router;

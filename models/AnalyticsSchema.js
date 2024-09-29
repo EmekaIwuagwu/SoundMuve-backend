@@ -58,8 +58,12 @@ const Store = mongoose.model('Store', storeSchema);
 
 // Schema for Location Analytics
 const locationSchema = new mongoose.Schema({
+    email: { type: String, required: true },
     location: { type: String, required: true },
-    release_sold: { type: Number, required: true },
+    album_sold: { type: String, required: true },
+    single_sold: { type: Number, required: true },
+    streams: { type: Number, required: true },
+    total: { type: Number, required: true },
     created_at: { type: Date, default: Date.now }
 });
 
