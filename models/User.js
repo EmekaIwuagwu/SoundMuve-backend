@@ -51,6 +51,10 @@ const userSchema = new mongoose.Schema({
       answer: { type: String },
     },
   ],
+  isKycSubmitted: {
+    type: Boolean,
+    default: false,  // KYC status starts as false by default
+  },
   created_at: {
     type: Date,
     default: Date.now,
