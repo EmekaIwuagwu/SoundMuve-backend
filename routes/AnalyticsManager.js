@@ -79,20 +79,15 @@ router.delete('/album-analytics/:id', async (req, res) => {
 // Get Total Apple and Spotify Revenue by Month
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
-        const { type } = req.query; // 'album' or 'single'
-        
-        // Validate the type
-        if (!['album', 'single'].includes(type)) {
-            return res.status(400).json({ message: 'Invalid type' });
-        }
+        const { type, month } = req.query; // 'album' or 'single', and the month (e.g. '2024-01' for January 2024)
 
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
+        if (!month) return res.status(400).json({ message: 'Month is required' });
+
+        const startOfMonth = new Date(month + '-01'); // Start of the month
+        const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0); // End of the month
+
+        // Set the hours to include the entire day
         startOfMonth.setHours(0, 0, 0, 0);
-
-        const endOfMonth = new Date();
-        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-        endOfMonth.setDate(0);
         endOfMonth.setHours(23, 59, 59, 999);
 
         let model;
@@ -103,24 +98,34 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         const results = await model.aggregate([
             { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
             { $group: {
-                _id: null,
+                _id: { day: { $dayOfMonth: '$created_at' } }, // Group by day of the month
                 totalAppleRevenue: { $sum: '$revenue.apple' },
                 totalSpotifyRevenue: { $sum: '$revenue.spotify' },
                 totalAppleStreams: { $sum: '$stream.apple' },
-                totalSpotifyStreams: { $sum: '$stream.spotify' }
-            }}
+                totalSpotifyStreams: { $sum: '$stream.spotify' },
+                count: { $sum: 1 }
+            }},
+            { $sort: { '_id.day': 1 } } // Sort by day of the month
         ]);
 
-        res.json(results[0] || {
-            totalAppleRevenue: 0,
-            totalSpotifyRevenue: 0,
-            totalAppleStreams: 0,
-            totalSpotifyStreams: 0
+        // Format the response to have a daily summary
+        const formattedResults = Array.from({ length: endOfMonth.getDate() }, (_, i) => {
+            const dayResult = results.find(result => result._id.day === i + 1);
+            return {
+                day: i + 1,
+                totalAppleRevenue: dayResult ? dayResult.totalAppleRevenue : 0,
+                totalSpotifyRevenue: dayResult ? dayResult.totalSpotifyRevenue : 0,
+                totalAppleStreams: dayResult ? dayResult.totalAppleStreams : 0,
+                totalSpotifyStreams: dayResult ? dayResult.totalSpotifyStreams : 0
+            };
         });
+
+        res.json(formattedResults);
     } catch (error) {
-        res.status(500).json({ message: 'Failed to retrieve revenue data.', error: error.message });
+        res.status(400).json({ message: error.message });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
