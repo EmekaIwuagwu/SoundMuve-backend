@@ -64,30 +64,47 @@ router.post('/kyc/select-questions', validateToken, async (req, res) => {
 router.post('/kyc/submit-answers', validateToken, async (req, res) => {
   const { email, answers } = req.body;
 
+  // Validate request body
   if (!email || !answers || answers.length !== 3) {
     return res.status(400).send({ message: 'Email and exactly 3 answers are required' });
   }
 
   try {
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).send({ message: 'User not found' });
     }
 
+    // Check if security questions are available
     if (!user.securityQuestions || user.securityQuestions.length !== 3) {
       return res.status(400).send({ message: 'Security questions not found or incomplete' });
     }
 
+    // Check if answers match the existing security questions
+    let answersMatch = true;
     user.securityQuestions.forEach((questionObj, index) => {
-      questionObj.answer = answers[index];
+      // Ensure answers are provided and match the stored answers
+      if (!questionObj.answer || questionObj.answer !== answers[index]) {
+        answersMatch = false;  // If any answer doesn't match, set flag to false
+      }
     });
 
+    // If answers are valid and match the existing ones, update KYC submission status
+    if (answersMatch) {
+      user.isKycSubmitted = true;  // Update KYC submission status
+    } else {
+      return res.status(400).send({ message: 'Provided answers do not match the security questions' });
+    }
+
+    // Save the user's updated security questions and KYC status
     await user.save();
-    res.status(200).send({ message: 'Security answers saved successfully' });
+    res.status(200).send({ message: 'Security answers verified successfully, KYC status updated' });
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
 });
+
 
 // Step 4: Edit Security Questions
 router.put('/kyc/edit-questions', validateToken, async (req, res) => {
