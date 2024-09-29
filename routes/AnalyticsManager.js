@@ -80,6 +80,12 @@ router.delete('/album-analytics/:id', async (req, res) => {
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
         const { type } = req.query; // 'album' or 'single'
+        
+        // Validate the type
+        if (!['album', 'single'].includes(type)) {
+            return res.status(400).json({ message: 'Invalid type' });
+        }
+
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
@@ -92,30 +98,25 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         let model;
         if (type === 'album') model = AlbumAnalytics;
         else if (type === 'single') model = SingleAnalytics;
-        else return res.status(400).json({ message: 'Invalid type specified. Use "album" or "single".' });
+        else return res.status(400).json({ message: 'Invalid type' });
 
-        const totalRevenue = await model.aggregate([
-            {
-                $match: {
-                    createdAt: { $gte: startOfMonth, $lt: endOfMonth }
-                }
-            },
-            {
-                $group: {
-                    _id: { $month: '$createdAt' },
-                    totalRevenue: { $sum: '$revenue' }
-                }
-            },
-            {
-                $project: {
-                    month: '$_id',
-                    totalRevenue: 1,
-                    _id: 0
-                }
-            }
+        const results = await model.aggregate([
+            { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
+            { $group: {
+                _id: null,
+                totalAppleRevenue: { $sum: '$revenue.apple' },
+                totalSpotifyRevenue: { $sum: '$revenue.spotify' },
+                totalAppleStreams: { $sum: '$stream.apple' },
+                totalSpotifyStreams: { $sum: '$stream.spotify' }
+            }}
         ]);
 
-        res.json({ message: 'Monthly revenue retrieved successfully!', data: totalRevenue });
+        res.json(results[0] || {
+            totalAppleRevenue: 0,
+            totalSpotifyRevenue: 0,
+            totalAppleStreams: 0,
+            totalSpotifyStreams: 0
+        });
     } catch (error) {
         res.status(500).json({ message: 'Failed to retrieve revenue data.', error: error.message });
     }
