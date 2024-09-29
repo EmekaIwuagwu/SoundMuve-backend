@@ -201,35 +201,45 @@ router.post('/locations', async (req, res) => {
     }
   });
   
-  // Get a location by email
-  router.get('/locations/:email', async (req, res) => {
-    const { email } = req.params;
-  
+  // Get all locations
+router.get('/locations', async (req, res) => {
     try {
-      const location = await Location.findOne({ email });
-      if (!location) {
-        return res.status(404).send({ message: 'Location not found for this email' });
-      }
-      res.status(200).send(location);
+      const locations = await Location.find();
+      res.status(200).send(locations);
     } catch (error) {
       res.status(500).send({ message: error.message });
     }
   });
   
-  // Update a location by email
-  router.put('/locations/:email', async (req, res) => {
+  // Get a location by email
+  router.get('/locations/email/:email', async (req, res) => {
     const { email } = req.params;
+  
+    try {
+      const locations = await Location.find({ email });
+      if (locations.length === 0) {
+        return res.status(404).send({ message: 'No locations found for this email' });
+      }
+      res.status(200).send(locations);
+    } catch (error) {
+      res.status(500).send({ message: error.message });
+    }
+  });
+  
+  // Update a location by email and ID
+  router.put('/locations/:id/email/:email', async (req, res) => {
+    const { id, email } = req.params;
     const { location, album_sold, single_sold, streams, total } = req.body;
   
     try {
       const updatedLocation = await Location.findOneAndUpdate(
-        { email },
+        { _id: id, email },
         { location, album_sold, single_sold, streams, total },
         { new: true, runValidators: true }
       );
   
       if (!updatedLocation) {
-        return res.status(404).send({ message: 'Location not found for this email' });
+        return res.status(404).send({ message: 'Location not found or email does not match' });
       }
       res.status(200).send({ message: 'Location updated successfully', location: updatedLocation });
     } catch (error) {
@@ -237,14 +247,14 @@ router.post('/locations', async (req, res) => {
     }
   });
   
-  // Delete a location by email
-  router.delete('/locations/:email', async (req, res) => {
-    const { email } = req.params;
+  // Delete a location by email and ID
+  router.delete('/locations/:id/email/:email', async (req, res) => {
+    const { id, email } = req.params;
   
     try {
-      const deletedLocation = await Location.findOneAndDelete({ email });
+      const deletedLocation = await Location.findOneAndDelete({ _id: id, email });
       if (!deletedLocation) {
-        return res.status(404).send({ message: 'Location not found for this email' });
+        return res.status(404).send({ message: 'Location not found or email does not match' });
       }
       res.status(200).send({ message: 'Location deleted successfully' });
     } catch (error) {
