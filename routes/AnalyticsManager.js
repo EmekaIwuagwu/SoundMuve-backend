@@ -132,11 +132,10 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 });
 
 
-
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
     try {
-        const { type, songId } = req.query; // 'album' or 'single' and songId
+        const { type, Id } = req.query; // 'album' or 'single' and Id
         const currentDate = new Date();
         const startOfYear = new Date(currentDate.getFullYear(), 0, 1); // Start of the current year
 
@@ -146,11 +145,11 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         else return res.status(400).json({ message: 'Invalid type' });
 
         // Find the song by ID
-        const song = await Song.findById(songId);
+        const song = await Song.findById(Id);
         if (!song) return res.status(404).json({ message: 'Song not found' });
 
         const results = await model.aggregate([
-            { $match: { created_at: { $gte: startOfYear }, song_id: songId } }, // Match songId in analytics
+            { $match: { created_at: { $gte: startOfYear }, song_id: Id } }, // Match Id in analytics
             { $group: {
                 _id: null,
                 totalAppleRevenue: { $sum: '$revenue.apple' },
@@ -184,7 +183,7 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                     streamTime: response.totalSpotifyStreamTime // Total stream time for Spotify
                 },
                 song: {
-                    id: songId,
+                    id: Id,
                     title: song.song_title,
                     albumId: song.album_id,
                     // Include any other song details you want to return
@@ -195,7 +194,6 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
-
 
 router.post('/locations', async (req, res) => {
     const { email, location, album_sold, single_sold, streams, total } = req.body;
