@@ -490,4 +490,77 @@ router.get('/monthlyReport/:email', async (req, res) => {
     }
 });
 
+router.get('/userReport/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        const { startDate, endDate } = req.query;
+
+        // Ensure startDate and endDate are provided
+        if (!startDate || !endDate) {
+            return res.status(400).json({ message: 'Start date and end date are required.' });
+        }
+
+        // Parse date range
+        const { start, end } = parseDateRange(startDate, endDate);
+
+        // Fetch album analytics in the provided date range
+        const albumData = await AlbumAnalytics.find({
+            email,
+            created_at: { $gte: start.toDate(), $lte: end.toDate() }
+        });
+
+        // Fetch single analytics in the provided date range
+        const singleData = await SingleAnalytics.find({
+            email,
+            created_at: { $gte: start.toDate(), $lte: end.toDate() }
+        });
+
+        // Initialize totals
+        let totalStreamsApple = 0;
+        let totalStreamsSpotify = 0;
+        let totalRevenue = 0;
+
+        // Arrays for album and single names
+        let albumNames = [];
+        let singleNames = [];
+
+        // Process album data
+        albumData.forEach(album => {
+            albumNames.push(album.album_name);
+            totalStreamsApple += album.stream.apple;
+            totalStreamsSpotify += album.stream.spotify;
+            totalRevenue += album.revenue.apple + album.revenue.spotify;
+        });
+
+        // Process single data
+        singleData.forEach(single => {
+            singleNames.push(single.single_name);
+            totalStreamsApple += single.stream.apple;
+            totalStreamsSpotify += single.stream.spotify;
+            totalRevenue += single.revenue.apple + single.revenue.spotify;
+        });
+
+        // Prepare report
+        const report = {
+            date_range: {
+                start: startDate,
+                end: endDate
+            },
+            albums: albumNames,
+            singles: singleNames,
+            total_streams: {
+                apple: totalStreamsApple,
+                spotify: totalStreamsSpotify,
+                combined: totalStreamsApple + totalStreamsSpotify
+            },
+            total_earnings: totalRevenue
+        };
+
+        // Return report
+        res.json(report);
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating report.', error: error.message });
+    }
+});
+
 module.exports = router;
