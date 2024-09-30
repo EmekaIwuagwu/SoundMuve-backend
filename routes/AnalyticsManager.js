@@ -98,39 +98,45 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         const results = await model.aggregate([
             { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
             { $group: {
-                _id: { day: { $dayOfMonth: '$created_at' } }, // Group by day of the month
+                _id: null,
                 totalAppleRevenue: { $sum: '$revenue.apple' },
                 totalSpotifyRevenue: { $sum: '$revenue.spotify' },
                 totalAppleStreams: { $sum: '$stream.apple' },
                 totalSpotifyStreams: { $sum: '$stream.spotify' },
                 count: { $sum: 1 }
-            }},
-            { $sort: { '_id.day': 1 } } // Sort by day of the month
+            }}
         ]);
 
-        // Format the response to have a daily summary
-        const formattedResults = Array.from({ length: endOfMonth.getDate() }, (_, i) => {
-            const dayResult = results.find(result => result._id.day === i + 1);
-            return {
-                day: i + 1,
-                totalAppleRevenue: dayResult ? dayResult.totalAppleRevenue : 0,
-                totalSpotifyRevenue: dayResult ? dayResult.totalSpotifyRevenue : 0,
-                totalAppleStreams: dayResult ? dayResult.totalAppleStreams : 0,
-                totalSpotifyStreams: dayResult ? dayResult.totalSpotifyStreams : 0
-            };
-        });
+        const totalData = results[0] || {
+            totalAppleRevenue: 0,
+            totalSpotifyRevenue: 0,
+            totalAppleStreams: 0,
+            totalSpotifyStreams: 0
+        };
 
-        res.json(formattedResults);
+        // Calculate percentage value
+        const totalRevenue = totalData.totalAppleRevenue + totalData.totalSpotifyRevenue;
+        const percentageValue = totalRevenue ? 
+            (totalData.totalAppleRevenue / totalRevenue) * 100 : 0;
+
+        // Format the response
+        const monthName = startOfMonth.toLocaleString('default', { month: 'short' });
+
+        res.json({
+            percentageValue: percentageValue.toFixed(2), // Two decimal places
+            month: monthName,
+        });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 });
 
 
+
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
     try {
-        const { type } = req.query; // 'album' or 'single'
+        const { type, songId } = req.query; // 'album' or 'single' and songId
         const currentDate = new Date();
         const startOfYear = new Date(currentDate.getFullYear(), 0, 1); // Start of the current year
 
@@ -139,8 +145,12 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         else if (type === 'single') model = SingleAnalytics;
         else return res.status(400).json({ message: 'Invalid type' });
 
+        // Find the song by ID
+        const song = await Song.findById(songId);
+        if (!song) return res.status(404).json({ message: 'Song not found' });
+
         const results = await model.aggregate([
-            { $match: { created_at: { $gte: startOfYear } } },
+            { $match: { created_at: { $gte: startOfYear }, song_id: songId } }, // Match songId in analytics
             { $group: {
                 _id: null,
                 totalAppleRevenue: { $sum: '$revenue.apple' },
@@ -172,6 +182,12 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                     revenue: response.totalSpotifyRevenue,
                     streams: response.totalSpotifyStreams,
                     streamTime: response.totalSpotifyStreamTime // Total stream time for Spotify
+                },
+                song: {
+                    id: songId,
+                    title: song.song_title,
+                    albumId: song.album_id,
+                    // Include any other song details you want to return
                 }
             }
         });

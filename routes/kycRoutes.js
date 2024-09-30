@@ -81,25 +81,19 @@ router.post('/kyc/submit-answers', validateToken, async (req, res) => {
       return res.status(400).send({ message: 'Security questions not found or incomplete' });
     }
 
-    // Check if answers match the existing security questions
-    let answersMatch = true;
+    // Save the provided answers to the user's security questions
     user.securityQuestions.forEach((questionObj, index) => {
-      // Ensure answers are provided and match the stored answers
-      if (!questionObj.answer || questionObj.answer !== answers[index]) {
-        answersMatch = false;  // If any answer doesn't match, set flag to false
+      if (questionObj) {
+        questionObj.answer = answers[index]; // Update the answer for each question
       }
     });
 
-    // If answers are valid and match the existing ones, update KYC submission status
-    if (answersMatch) {
-      user.isKycSubmitted = true;  // Update KYC submission status
-    } else {
-      return res.status(400).send({ message: 'Provided answers do not match the security questions' });
-    }
+    // Update KYC submission status
+    user.isKycSubmitted = true;  // Set KYC status to true
 
     // Save the user's updated security questions and KYC status
     await user.save();
-    res.status(200).send({ message: 'Security answers verified successfully, KYC status updated' });
+    res.status(200).send({ message: 'Security answers submitted successfully, KYC status updated' });
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
