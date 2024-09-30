@@ -468,6 +468,9 @@ router.get('/monthlyReport/:email', async (req, res) => {
             totalRevenue += (single.revenue.apple + single.revenue.spotify);
         });
 
+        // Calculate the combined total streams for Apple and Spotify
+        const totalCombinedStreams = totalStreamsApple + totalStreamsSpotify;
+
         // Prepare the report
         const report = {
             sales_period: salesPeriod,
@@ -476,8 +479,9 @@ router.get('/monthlyReport/:email', async (req, res) => {
             streams: {
                 apple: totalStreamsApple,
                 spotify: totalStreamsSpotify,
+                total_combined: totalCombinedStreams // Combined total streams
             },
-            total: totalRevenue
+            total_revenue: totalRevenue
         };
 
         res.json(report);
