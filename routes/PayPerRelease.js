@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose'); // Import mongoose
+const jwt = require('jsonwebtoken'); 
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const PromoCode = require('../models/PromoCode');
@@ -8,8 +9,24 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const router = express.Router();
 
+const authenticateToken = (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1]; // Get token from the 'Authorization' header
+
+    if (!token) {
+        return res.sendStatus(401); // Unauthorized
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.sendStatus(403); // Forbidden
+        }
+        req.user = user; // Save the user information in request
+        next(); // Proceed to the next middleware or route handler
+    });
+};
+
 // Add item to cart
-router.post('/add-to-cart', async (req, res) => {
+router.post('/add-to-cart', authenticateToken, async (req, res) => {
     const { email, type, name } = req.body;
 
     if (!email || !type || !name) {
@@ -43,7 +60,7 @@ router.post('/add-to-cart', async (req, res) => {
 });
 
 // Apply promo code to cart
-router.post('/apply-promo', async (req, res) => {
+router.post('/apply-promo', authenticateToken,  async (req, res) => {
     const { email, code, itemId } = req.body; // Change itemId to _id
 
     if (!email || !code || !itemId) {
@@ -90,7 +107,7 @@ router.post('/apply-promo', async (req, res) => {
 });
 
 // Checkout
-router.post('/checkout', async (req, res) => {
+router.post('/checkout', authenticateToken,  async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
