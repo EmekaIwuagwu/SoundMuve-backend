@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const Cart = require('../models/Cart');
+const Order = require('../models/Order');
 const PromoCode = require('../models/PromoCode');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
@@ -8,10 +9,10 @@ const router = express.Router();
 
 // Add item to cart
 router.post('/add-to-cart', async (req, res) => {
-    const { type, name } = req.body;
+    const { email, type, name } = req.body;
 
-    if (!type || !name) {
-        return res.status(400).json({ message: 'Type and name are required.' });
+    if (!email || !type || !name) {
+        return res.status(400).json({ message: 'Email, type, and name are required.' });
     }
 
     let price = 0;
@@ -24,12 +25,14 @@ router.post('/add-to-cart', async (req, res) => {
     }
 
     try {
-        const cart = new Cart({
-            type,
-            name,
-            price,
-            total: price
-        });
+        let cart = await Cart.findOne({ email });
+        if (!cart) {
+            cart = new Cart({ email, items: [], total: 0 });
+        }
+
+        cart.items.push({ type, name, price });
+        cart.total += price;
+
         await cart.save();
 
         res.json({ message: `${type} added to cart`, cart });
@@ -40,14 +43,14 @@ router.post('/add-to-cart', async (req, res) => {
 
 // Apply promo code to cart
 router.post('/apply-promo', async (req, res) => {
-    const { code } = req.body;
+    const { email, code } = req.body;
 
-    if (!code) {
-        return res.status(400).json({ message: 'Promo code is required.' });
+    if (!email || !code) {
+        return res.status(400).json({ message: 'Email and promo code are required.' });
     }
 
     try {
-        const cart = await Cart.findOne(); // Assuming a single cart for simplicity
+        const cart = await Cart.findOne({ email });
         if (!cart) {
             return res.status(404).json({ message: 'Cart is empty.' });
         }
@@ -68,56 +71,50 @@ router.post('/apply-promo', async (req, res) => {
     }
 });
 
-// Create promo code (admin functionality)
-router.post('/create-promo', async (req, res) => {
-    const { code, discount } = req.body;
-
-    if (!code || !discount) {
-        return res.status(400).json({ message: 'Code and discount are required.' });
-    }
-
-    try {
-        const promoCode = new PromoCode({ code, discount });
-        await promoCode.save();
-        res.json({ message: 'Promo code created successfully', promoCode });
-    } catch (error) {
-        res.status(500).json({ message: 'Error creating promo code', error });
-    }
-});
-
 // Checkout
 router.post('/checkout', async (req, res) => {
-    try {
-        const cart = await Cart.findOne(); // Assuming a single cart for simplicity
+    const { email } = req.body;
 
-        if (!cart) {
+    if (!email) {
+        return res.status(400).json({ message: 'Email is required for checkout.' });
+    }
+
+    try {
+        const cart = await Cart.findOne({ email });
+        if (!cart || cart.items.length === 0) {
             return res.status(404).json({ message: 'Cart is empty.' });
         }
 
         // Create a Stripe session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'usd',
-                        product_data: {
-                            name: cart.name
-                        },
-                        unit_amount: Math.round(cart.total * 100), // Stripe takes amounts in cents
-                    },
-                    quantity: 1,
+            line_items: cart.items.map(item => ({
+                price_data: {
+                    currency: 'usd',
+                    product_data: { name: item.name },
+                    unit_amount: Math.round(item.price * 100),
                 },
-            ],
+                quantity: 1,
+            })),
             mode: 'payment',
-            success_url: 'https://img.freepik.com/free-vector/3d-style-safety-shield-logo-with-checkmark-sign-safe-access_1017-51232.jpg',
-            cancel_url: 'https://c7.alamy.com/comp/HE551N/failed-stamp-sign-seal-HE551N.jpg',
+            success_url: 'http://localhost:3000/success',
+            cancel_url: 'http://localhost:3000/cancel',
         });
+
+        // Save the order
+        const order = new Order({
+            email: cart.email,
+            items: cart.items,
+            total: cart.total,
+            paymentStatus: 'pending'
+        });
+        await order.save();
 
         res.json({ id: session.id });
     } catch (error) {
-        res.status(500).json({ message: 'Error during checkout.', error });
+        res.status(500).json({ message: 'Error during checkout', error });
     }
 });
 
+// Export the router
 module.exports = router;
