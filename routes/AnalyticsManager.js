@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const Song = require('../models/Song');
 const { AlbumAnalytics, SingleAnalytics, Store, Location } = require('../models/AnalyticsSchema');
 const jwt = require('jsonwebtoken');
 
