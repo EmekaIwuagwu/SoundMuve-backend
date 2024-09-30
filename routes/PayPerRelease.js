@@ -43,17 +43,17 @@ router.post('/add-to-cart', async (req, res) => {
 
 // Apply promo code to cart
 router.post('/apply-promo', async (req, res) => {
-    const { email, code, itemId } = req.body; // Include itemId to identify the item in the cart
+    const { email, code, cartId, itemId } = req.body; // Now using cartId to identify the cart
 
-    if (!email || !code || !itemId) {
-        return res.status(400).json({ message: 'Email, promo code, and item ID are required.' });
+    if (!email || !code || !cartId || !itemId) {
+        return res.status(400).json({ message: 'Email, promo code, cart ID, and item ID are required.' });
     }
 
     try {
-        // Find the cart by email
-        const cart = await Cart.findOne({ email });
+        // Find the cart by email and cartId
+        const cart = await Cart.findOne({ email, _id: cartId });
         if (!cart) {
-            return res.status(404).json({ message: 'Cart is empty.' });
+            return res.status(404).json({ message: 'Cart not found.' });
         }
 
         // Check if the item exists in the cart by itemId
@@ -83,7 +83,6 @@ router.post('/apply-promo', async (req, res) => {
         res.status(500).json({ message: 'Error applying promo code', error });
     }
 });
-
 
 //Checkout
 
