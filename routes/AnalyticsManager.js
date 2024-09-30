@@ -78,12 +78,16 @@ router.delete('/album-analytics/:id', async (req, res) => {
 
 // Repeat similar routes for SingleAnalytics, Store, and Location
 
-// Get Total Apple and Spotify Revenue by Month
+// Get Total Apple and Spotify Revenue by Month for a User
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
-        const { type, year } = req.query; // 'album' or 'single', and the year (e.g. '2024')
+        const { type, year, email } = req.query; // 'album' or 'single', year (e.g. '2024'), and user email
+
+        // Log the received parameters
+        console.log(`Received type: ${type}, year: ${year}, email: ${email}`);
 
         if (!year) return res.status(400).json({ message: 'Year is required' });
+        if (!email) return res.status(400).json({ message: 'Email is required' });
 
         let model;
         if (type === 'album') model = AlbumAnalytics;
@@ -101,7 +105,12 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
             endOfMonth.setHours(23, 59, 59, 999);
 
             const results = await model.aggregate([
-                { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
+                { 
+                    $match: { 
+                        created_at: { $gte: startOfMonth, $lte: endOfMonth },
+                        userEmail: email // Ensure your model has a field that stores the user's email
+                    } 
+                },
                 { $group: {
                     _id: null,
                     totalAppleRevenue: { $sum: '$revenue.apple' },
@@ -135,6 +144,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
