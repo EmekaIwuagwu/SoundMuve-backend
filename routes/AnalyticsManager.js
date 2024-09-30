@@ -144,21 +144,17 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         else if (type === 'single') model = SingleAnalytics;
         else return res.status(400).json({ message: 'Invalid type' });
 
+        // Log the ID being searched
+        console.log(`Searching for song with ID: ${Id}`);
+        
         // Find the song by ID
-        const song = await Song.findById(Id);
+        const song = await Song.findById(Id.trim());
+        console.log(song); // Log the retrieved song object
+        
         if (!song) return res.status(404).json({ message: 'Song not found' });
 
         const results = await model.aggregate([
-            { $match: { created_at: { $gte: startOfYear }, song_id: Id } }, // Match Id in analytics
-            { $group: {
-                _id: null,
-                totalAppleRevenue: { $sum: '$revenue.apple' },
-                totalSpotifyRevenue: { $sum: '$revenue.spotify' },
-                totalAppleStreams: { $sum: '$stream.apple' },
-                totalSpotifyStreams: { $sum: '$stream.spotify' },
-                totalAppleStreamTime: { $sum: { $multiply: ['$stream.apple', 3] } }, // Assuming each stream takes 3 minutes as an example
-                totalSpotifyStreamTime: { $sum: { $multiply: ['$stream.spotify', 3] } } // Assuming each stream takes 3 minutes as an example
-            }}
+            { $match: { created_at: { $gte: startOfYear }, song_id: Id } } // Match Id in analytics
         ]);
 
         const response = results[0] || {
@@ -175,25 +171,26 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                 apple: {
                     revenue: response.totalAppleRevenue,
                     streams: response.totalAppleStreams,
-                    streamTime: response.totalAppleStreamTime // Total stream time for Apple
+                    streamTime: response.totalAppleStreamTime
                 },
                 spotify: {
                     revenue: response.totalSpotifyRevenue,
                     streams: response.totalSpotifyStreams,
-                    streamTime: response.totalSpotifyStreamTime // Total stream time for Spotify
+                    streamTime: response.totalSpotifyStreamTime
                 },
                 song: {
                     id: Id,
                     title: song.song_title,
                     albumId: song.album_id,
-                    // Include any other song details you want to return
                 }
             }
         });
     } catch (error) {
+        console.error(error); // Log error for debugging
         res.status(500).json({ message: error.message });
     }
 });
+
 
 router.post('/locations', async (req, res) => {
     const { email, location, album_sold, single_sold, streams, total } = req.body;
