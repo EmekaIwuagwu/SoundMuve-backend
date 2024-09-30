@@ -87,7 +87,7 @@ router.post('/apply-promo', async (req, res) => {
         await cart.save();
         res.json({ message: 'Promo code applied', cart, originalPrice }); // Return original price for reference
     } catch (error) {
-        res.status(500).json({ message: 'Error applying promo code', error });
+        res.status(500).json({ message: 'Error applying promo code', error: error.message });
     }
 });
 
