@@ -30,6 +30,12 @@ const checkToken = (req, res, next) => {
     });
 };
 
+const parseDateRange = (startDate, endDate) => {
+    const start = moment(startDate).startOf('day');
+    const end = moment(endDate).endOf('day');
+    return { start, end };
+};
+
 // Apply middleware to all routes
 router.use(checkToken);
 
