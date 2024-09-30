@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Song = require('../models/Song');
+const User = require('../models/User');
 const { AlbumAnalytics, SingleAnalytics, Store, Location } = require('../models/AnalyticsSchema');
 const jwt = require('jsonwebtoken');
 
@@ -136,7 +137,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
     try {
-        const { type, Id } = req.query; // 'album' or 'single' and Id
+        const { type, Id, email } = req.query; // 'album' or 'single', Id, and email
         const currentDate = new Date();
         const startOfYear = new Date(currentDate.getFullYear(), 0, 1); // Start of the current year
 
@@ -145,17 +146,24 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         else if (type === 'single') model = SingleAnalytics;
         else return res.status(400).json({ message: 'Invalid type' });
 
-        // Log the ID being searched
-        console.log(`Searching for song with ID: ${Id}`);
+        // Log the ID and email being searched
+        console.log(`Searching for song with ID: ${Id} and email: ${email}`);
         
+        // Find the user by email
+        const user = await User.findOne({ email: email.trim() });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
         // Find the song by ID
         const song = await Song.findById(Id.trim());
-        console.log(song); // Log the retrieved song object
-        
         if (!song) return res.status(404).json({ message: 'Song not found' });
 
         const results = await model.aggregate([
-            { $match: { created_at: { $gte: startOfYear }, song_id: Id } } // Match Id in analytics
+            { 
+                $match: { 
+                    created_at: { $gte: startOfYear }, 
+                    song_id: Id 
+                } 
+            }
         ]);
 
         const response = results[0] || {
@@ -183,6 +191,10 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                     id: Id,
                     title: song.song_title,
                     albumId: song.album_id,
+                },
+                user: {
+                    email: user.email,
+                    balance: user.balance, // Include user balance if needed
                 }
             }
         });
@@ -191,7 +203,6 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
-
 
 router.post('/locations', async (req, res) => {
     const { email, location, album_sold, single_sold, streams, total } = req.body;
