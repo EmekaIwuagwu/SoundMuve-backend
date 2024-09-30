@@ -81,53 +81,56 @@ router.delete('/album-analytics/:id', async (req, res) => {
 // Get Total Apple and Spotify Revenue by Month
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
-        const { type, month } = req.query; // 'album' or 'single', and the month (e.g. '2024-01' for January 2024)
+        const { type, year } = req.query; // 'album' or 'single', and the year (e.g. '2024')
 
-        if (!month) return res.status(400).json({ message: 'Month is required' });
-
-        const startOfMonth = new Date(month + '-01'); // Start of the month
-        const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0); // End of the month
-
-        // Set the hours to include the entire day
-        startOfMonth.setHours(0, 0, 0, 0);
-        endOfMonth.setHours(23, 59, 59, 999);
+        if (!year) return res.status(400).json({ message: 'Year is required' });
 
         let model;
         if (type === 'album') model = AlbumAnalytics;
         else if (type === 'single') model = SingleAnalytics;
         else return res.status(400).json({ message: 'Invalid type' });
 
-        const results = await model.aggregate([
-            { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
-            { $group: {
-                _id: null,
-                totalAppleRevenue: { $sum: '$revenue.apple' },
-                totalSpotifyRevenue: { $sum: '$revenue.spotify' },
-                totalAppleStreams: { $sum: '$stream.apple' },
-                totalSpotifyStreams: { $sum: '$stream.spotify' },
-                count: { $sum: 1 }
-            }}
-        ]);
+        const monthlyData = [];
 
-        const totalData = results[0] || {
-            totalAppleRevenue: 0,
-            totalSpotifyRevenue: 0,
-            totalAppleStreams: 0,
-            totalSpotifyStreams: 0
-        };
+        for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+            const startOfMonth = new Date(year, monthIndex, 1); // Start of the month
+            const endOfMonth = new Date(year, monthIndex + 1, 0); // End of the month
 
-        // Calculate percentage value
-        const totalRevenue = totalData.totalAppleRevenue + totalData.totalSpotifyRevenue;
-        const percentageValue = totalRevenue ? 
-            (totalData.totalAppleRevenue / totalRevenue) * 100 : 0;
+            // Set the hours to include the entire day
+            startOfMonth.setHours(0, 0, 0, 0);
+            endOfMonth.setHours(23, 59, 59, 999);
 
-        // Format the response
-        const monthName = startOfMonth.toLocaleString('default', { month: 'short' });
+            const results = await model.aggregate([
+                { $match: { created_at: { $gte: startOfMonth, $lte: endOfMonth } } },
+                { $group: {
+                    _id: null,
+                    totalAppleRevenue: { $sum: '$revenue.apple' },
+                    totalSpotifyRevenue: { $sum: '$revenue.spotify' },
+                }}
+            ]);
 
-        res.json({
-            percentageValue: percentageValue.toFixed(2), // Two decimal places
-            month: monthName,
-        });
+            const totalData = results[0] || {
+                totalAppleRevenue: 0,
+                totalSpotifyRevenue: 0,
+            };
+
+            // Calculate total revenue and percentage value
+            const totalRevenue = totalData.totalAppleRevenue + totalData.totalSpotifyRevenue;
+            const percentageValue = totalRevenue ? 
+                (totalData.totalAppleRevenue / totalRevenue) * 100 : 0;
+
+            // Format month name
+            const monthName = startOfMonth.toLocaleString('default', { month: 'short' });
+
+            // Add data to the array
+            monthlyData.push({
+                percentageValue: percentageValue.toFixed(2), // Two decimal places
+                month: monthName,
+            });
+        }
+
+        // Return all monthly data
+        res.json(monthlyData);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
