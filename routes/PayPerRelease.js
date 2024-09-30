@@ -44,35 +44,27 @@ router.post('/add-to-cart', async (req, res) => {
 
 // Apply promo code to cart
 router.post('/apply-promo', async (req, res) => {
-    const { email, code, cartId, itemId } = req.body;
+    const { email, code, itemId } = req.body; // Change itemId to _id
 
-    if (!email || !code || !cartId || !itemId) {
-        return res.status(400).json({ message: 'Email, promo code, cart ID, and item ID are required.' });
+    if (!email || !code || !itemId) {
+        return res.status(400).json({ message: 'Email, promo code, and item ID are required.' });
     }
 
     try {
-        // Validate cartId format
-        if (!mongoose.Types.ObjectId.isValid(cartId)) {
-            return res.status(400).json({ message: 'Invalid cart ID format.' });
-        }
-
-        console.log(`Searching for cart with email: ${email} and cartId: ${cartId}`);
-
-        // Find the cart by email and cartId, convert cartId to ObjectId
-        const cart = await Cart.findOne({
-            email,
-            _id: mongoose.Types.ObjectId(cartId)
-        });
+        // Find the cart by email
+        const cart = await Cart.findOne({ email });
 
         if (!cart) {
             return res.status(404).json({ message: 'Cart not found.' });
         }
 
+        // Find the item in the cart by _id
         const itemInCart = cart.items.find(item => item._id.toString() === itemId);
         if (!itemInCart) {
             return res.status(404).json({ message: 'Item not found in the cart.' });
         }
 
+        // Find the promo code
         const promo = await PromoCode.findOne({ code });
         if (!promo) {
             return res.status(404).json({ message: 'Invalid promo code.' });
