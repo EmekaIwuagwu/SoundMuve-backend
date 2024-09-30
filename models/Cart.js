@@ -1,11 +1,17 @@
+// models/Cart.js
 const mongoose = require('mongoose');
 
 const cartSchema = new mongoose.Schema({
-    type: { type: String, required: true }, // 'single' or 'album'
-    name: { type: String, required: true }, // Song or Album name
-    price: { type: Number, required: true }, // Base price ($25 for single, $45 for album)
-    total: { type: Number, required: true }, // Calculated total after discount
+    email: { type: String, required: true }, // User's email as an identifier
+    items: [
+        {
+            type: { type: String, required: true }, // 'single' or 'album'
+            name: { type: String, required: true }, // Name of the song or album
+            price: { type: Number, required: true }, // Price of the item
+        },
+    ],
+    total: { type: Number, default: 0 }, // Total amount to pay
+    createdAt: { type: Date, default: Date.now }, // Date when the cart was created
 });
 
-const Cart = mongoose.model('Cart', cartSchema);
-module.exports = Cart;
+module.exports = mongoose.model('Cart', cartSchema);

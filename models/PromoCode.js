@@ -1,11 +1,9 @@
+// models/PromoCode.js
 const mongoose = require('mongoose');
 
-// Promo Code Schema
 const promoCodeSchema = new mongoose.Schema({
-    code: { type: String, required: true, unique: true },
-    discount: { type: Number, required: true } // Discount percentage (e.g. 10 for 10%)
+    code: { type: String, required: true, unique: true }, // Promo code string
+    discount: { type: Number, required: true, min: 0, max: 100 }, // Discount percentage
 });
 
-const PromoCode = mongoose.model('PromoCode', promoCodeSchema);
-
-module.exports = PromoCode;
+module.exports = mongoose.model('PromoCode', promoCodeSchema);
