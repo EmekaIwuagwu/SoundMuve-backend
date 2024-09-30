@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const mongoose = require('mongoose'); // Import mongoose
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const PromoCode = require('../models/PromoCode');
@@ -43,26 +44,30 @@ router.post('/add-to-cart', async (req, res) => {
 
 // Apply promo code to cart
 router.post('/apply-promo', async (req, res) => {
-    const { email, code, cartId, itemId } = req.body; // Now using cartId to identify the cart
+    const { email, code, cartId, itemId } = req.body;
 
     if (!email || !code || !cartId || !itemId) {
         return res.status(400).json({ message: 'Email, promo code, cart ID, and item ID are required.' });
     }
 
     try {
-        // Find the cart by email and cartId
-        const cart = await Cart.findOne({ email, _id: cartId });
+        console.log(`Searching for cart with email: ${email} and cartId: ${cartId}`);
+
+        // Find the cart by email and cartId, convert cartId to ObjectId
+        const cart = await Cart.findOne({
+            email,
+            _id: mongoose.Types.ObjectId(cartId) // Ensure this is correct
+        });
+
         if (!cart) {
             return res.status(404).json({ message: 'Cart not found.' });
         }
 
-        // Check if the item exists in the cart by itemId
         const itemInCart = cart.items.find(item => item._id.toString() === itemId);
         if (!itemInCart) {
             return res.status(404).json({ message: 'Item not found in the cart.' });
         }
 
-        // Find the promo code
         const promo = await PromoCode.findOne({ code });
         if (!promo) {
             return res.status(404).json({ message: 'Invalid promo code.' });
@@ -70,22 +75,23 @@ router.post('/apply-promo', async (req, res) => {
 
         // Calculate discount
         const discountPercentage = promo.discount / 100;
-        const discountAmount = itemInCart.price * discountPercentage; // Calculate discount based on the item's price
-        itemInCart.price -= discountAmount; // Update the item's price after applying the discount
+        const discountAmount = itemInCart.price * discountPercentage;
+
+        // Update the price but keep the original for order references
+        const originalPrice = itemInCart.price;
+        itemInCart.price -= discountAmount;
 
         // Recalculate total
-        cart.total = cart.items.reduce((total, item) => total + item.price, 0); // Recalculate total for the cart
+        cart.total = cart.items.reduce((total, item) => total + item.price, 0);
 
-        // Save the updated cart
         await cart.save();
-        res.json({ message: 'Promo code applied', cart });
+        res.json({ message: 'Promo code applied', cart, originalPrice }); // Return original price for reference
     } catch (error) {
         res.status(500).json({ message: 'Error applying promo code', error });
     }
 });
 
-//Checkout
-
+// Checkout
 router.post('/checkout', async (req, res) => {
     const { email } = req.body;
 
