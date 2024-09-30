@@ -22,6 +22,7 @@ const analytics = require("./routes/Analytics");
 const analyticsRoutes = require("./routes/AnalyticsManager");
 const kycRoutes = require("./routes/kycRoutes");
 const search = require("./routes/searchRoutes");
+const checkout = require("./routes/PayPerRelease");
 
 app.use(cors())
 
@@ -69,6 +70,7 @@ app.use("/api/analytics",analytics);
 app.use("/api/analyticsManager",analyticsRoutes);
 app.use("/api/kyc",kycRoutes);
 app.use("/api/search",search);
+app.use("/api/checkout",checkout);
 
 
 
