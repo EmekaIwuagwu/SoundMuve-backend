@@ -51,12 +51,17 @@ router.post('/apply-promo', async (req, res) => {
     }
 
     try {
+        // Validate cartId format
+        if (!mongoose.Types.ObjectId.isValid(cartId)) {
+            return res.status(400).json({ message: 'Invalid cart ID format.' });
+        }
+
         console.log(`Searching for cart with email: ${email} and cartId: ${cartId}`);
 
         // Find the cart by email and cartId, convert cartId to ObjectId
         const cart = await Cart.findOne({
             email,
-            _id: mongoose.Types.ObjectId(cartId) // Ensure this is correct
+            _id: mongoose.Types.ObjectId(cartId)
         });
 
         if (!cart) {
@@ -87,6 +92,7 @@ router.post('/apply-promo', async (req, res) => {
         await cart.save();
         res.json({ message: 'Promo code applied', cart, originalPrice }); // Return original price for reference
     } catch (error) {
+        console.error(error); // Log the error for debugging
         res.status(500).json({ message: 'Error applying promo code', error: error.message });
     }
 });
