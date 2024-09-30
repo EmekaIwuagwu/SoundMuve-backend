@@ -432,4 +432,57 @@ router.delete('/single-analytics/:email/:id', async (req, res) => {
     }
 });
 
+router.get('/monthlyReport/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        
+        // Get Album Analytics for the user
+        const albumData = await AlbumAnalytics.find({ email });
+        // Get Single Analytics for the user
+        const singleData = await SingleAnalytics.find({ email });
+
+        // Format the sales period
+        const salesPeriod = moment().format('MMM YYYY');
+
+        // Calculate totals
+        let albumSold = 0;
+        let singleSold = 0;
+        let totalStreamsApple = 0;
+        let totalStreamsSpotify = 0;
+        let totalRevenue = 0;
+
+        // Process Album Data
+        albumData.forEach(album => {
+            albumSold += album.album_sold;
+            totalStreamsApple += album.stream.apple;
+            totalStreamsSpotify += album.stream.spotify;
+            totalRevenue += (album.revenue.apple + album.revenue.spotify);
+        });
+
+        // Process Single Data
+        singleData.forEach(single => {
+            singleSold += single.single_sold;
+            totalStreamsApple += single.stream.apple;
+            totalStreamsSpotify += single.stream.spotify;
+            totalRevenue += (single.revenue.apple + single.revenue.spotify);
+        });
+
+        // Prepare the report
+        const report = {
+            sales_period: salesPeriod,
+            album_sold: albumSold,
+            single_sold: singleSold,
+            streams: {
+                apple: totalStreamsApple,
+                spotify: totalStreamsSpotify,
+            },
+            total: totalRevenue
+        };
+
+        res.json(report);
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating report.', error: error.message });
+    }
+});
+
 module.exports = router;
