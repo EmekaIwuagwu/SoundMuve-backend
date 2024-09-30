@@ -102,13 +102,13 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
             endOfMonth.setHours(23, 59, 59, 999);
 
             const results = await model.aggregate([
-                { 
-                    $match: { 
+                {
+                    $match: {
                         created_at: { $gte: startOfMonth, $lte: endOfMonth },
                         email: email // Filter by email
-                    } 
+                    }
                 },
-                { 
+                {
                     $group: {
                         _id: null,
                         totalAppleRevenue: { $sum: '$revenue.apple' },
@@ -124,7 +124,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 
             // Calculate total revenue and percentage value
             const totalRevenue = totalData.totalAppleRevenue + totalData.totalSpotifyRevenue;
-            const percentageValue = totalRevenue ? 
+            const percentageValue = totalRevenue ?
                 (totalData.totalAppleRevenue / totalRevenue) * 100 : 0;
 
             // Format month name
@@ -158,7 +158,7 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
 
         // Log the ID and email being searched
         console.log(`Searching for song with ID: ${Id} and email: ${email}`);
-        
+
         // Find the user by email
         const user = await User.findOne({ email: email.trim() });
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -168,11 +168,11 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         if (!song) return res.status(404).json({ message: 'Song not found' });
 
         const results = await model.aggregate([
-            { 
-                $match: { 
-                    created_at: { $gte: startOfYear }, 
-                    song_id: Id 
-                } 
+            {
+                $match: {
+                    created_at: { $gte: startOfYear },
+                    song_id: Id
+                }
             }
         ]);
 
@@ -216,84 +216,220 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
 
 router.post('/locations', async (req, res) => {
     const { email, location, album_sold, single_sold, streams, total } = req.body;
-  
+
     try {
-      const newLocation = new Location({
-        email,
-        location,
-        album_sold,
-        single_sold,
-        streams,
-        total
-      });
-  
-      await newLocation.save();
-      res.status(201).send({ message: 'Location created successfully', location: newLocation });
+        const newLocation = new Location({
+            email,
+            location,
+            album_sold,
+            single_sold,
+            streams,
+            total
+        });
+
+        await newLocation.save();
+        res.status(201).send({ message: 'Location created successfully', location: newLocation });
     } catch (error) {
-      res.status(500).send({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
-  });
-  
-  // Get all locations
+});
+
+// Get all locations
 router.get('/locations', async (req, res) => {
     try {
-      const locations = await Location.find();
-      res.status(200).send(locations);
+        const locations = await Location.find();
+        res.status(200).send(locations);
     } catch (error) {
-      res.status(500).send({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
-  });
-  
-  // Get a location by email
-  router.get('/locations/email/:email', async (req, res) => {
+});
+
+// Get a location by email
+router.get('/locations/email/:email', async (req, res) => {
     const { email } = req.params;
-  
+
     try {
-      const locations = await Location.find({ email });
-      if (locations.length === 0) {
-        return res.status(404).send({ message: 'No locations found for this email' });
-      }
-      res.status(200).send(locations);
+        const locations = await Location.find({ email });
+        if (locations.length === 0) {
+            return res.status(404).send({ message: 'No locations found for this email' });
+        }
+        res.status(200).send(locations);
     } catch (error) {
-      res.status(500).send({ message: error.message });
+        res.status(500).send({ message: error.message });
     }
-  });
-  
-  // Update a location by email and ID
-  router.put('/locations/:id/email/:email', async (req, res) => {
+});
+
+// Update a location by email and ID
+router.put('/locations/:id/email/:email', async (req, res) => {
     const { id, email } = req.params;
     const { location, album_sold, single_sold, streams, total } = req.body;
-  
-    try {
-      const updatedLocation = await Location.findOneAndUpdate(
-        { _id: id, email },
-        { location, album_sold, single_sold, streams, total },
-        { new: true, runValidators: true }
-      );
-  
-      if (!updatedLocation) {
-        return res.status(404).send({ message: 'Location not found or email does not match' });
-      }
-      res.status(200).send({ message: 'Location updated successfully', location: updatedLocation });
-    } catch (error) {
-      res.status(500).send({ message: error.message });
-    }
-  });
-  
-  // Delete a location by email and ID
-  router.delete('/locations/:id/email/:email', async (req, res) => {
-    const { id, email } = req.params;
-  
-    try {
-      const deletedLocation = await Location.findOneAndDelete({ _id: id, email });
-      if (!deletedLocation) {
-        return res.status(404).send({ message: 'Location not found or email does not match' });
-      }
-      res.status(200).send({ message: 'Location deleted successfully' });
-    } catch (error) {
-      res.status(500).send({ message: error.message });
-    }
-  });
 
+    try {
+        const updatedLocation = await Location.findOneAndUpdate(
+            { _id: id, email },
+            { location, album_sold, single_sold, streams, total },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedLocation) {
+            return res.status(404).send({ message: 'Location not found or email does not match' });
+        }
+        res.status(200).send({ message: 'Location updated successfully', location: updatedLocation });
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+});
+
+// Delete a location by email and ID
+router.delete('/locations/:id/email/:email', async (req, res) => {
+    const { id, email } = req.params;
+
+    try {
+        const deletedLocation = await Location.findOneAndDelete({ _id: id, email });
+        if (!deletedLocation) {
+            return res.status(404).send({ message: 'Location not found or email does not match' });
+        }
+        res.status(200).send({ message: 'Location deleted successfully' });
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+});
+
+router.get('/generate-report', async (req, res) => {
+    try {
+        const { type, email } = req.query; // 'album' or 'single'
+
+        if (!type || !email) {
+            return res.status(400).json({ message: 'Type and email are required' });
+        }
+
+        let reportData;
+
+        if (type === 'album') {
+            reportData = await AlbumAnalytics.aggregate([
+                { $match: { email: email } },
+                {
+                    $group: {
+                        _id: null,
+                        totalAlbumSold: { $sum: '$album_sold' },
+                        totalStreamApple: { $sum: '$stream.apple' },
+                        totalStreamSpotify: { $sum: '$stream.spotify' },
+                        totalRevenueApple: { $sum: '$revenue.apple' },
+                        totalRevenueSpotify: { $sum: '$revenue.spotify' }
+                    }
+                }
+            ]);
+        } else if (type === 'single') {
+            reportData = await SingleAnalytics.aggregate([
+                { $match: { email: email } },
+                {
+                    $group: {
+                        _id: null,
+                        totalSingleSold: { $sum: '$single_sold' },
+                        totalStreamApple: { $sum: '$stream.apple' },
+                        totalStreamSpotify: { $sum: '$stream.spotify' },
+                        totalRevenueApple: { $sum: '$revenue.apple' },
+                        totalRevenueSpotify: { $sum: '$revenue.spotify' }
+                    }
+                }
+            ]);
+        } else {
+            return res.status(400).json({ message: 'Invalid type' });
+        }
+
+        const data = reportData[0] || {
+            totalAlbumSold: 0,
+            totalSingleSold: 0,
+            totalStreamApple: 0,
+            totalStreamSpotify: 0,
+            totalRevenueApple: 0,
+            totalRevenueSpotify: 0,
+        };
+
+        const response = {
+            ...(type === 'album' ? {
+                album_sold: data.totalAlbumSold,
+                stream: {
+                    apple: data.totalStreamApple,
+                    spotify: data.totalStreamSpotify,
+                },
+                revenue: {
+                    apple: data.totalRevenueApple,
+                    spotify: data.totalRevenueSpotify,
+                }
+            } : {
+                single_sold: data.totalSingleSold,
+                stream: {
+                    apple: data.totalStreamApple,
+                    spotify: data.totalStreamSpotify,
+                },
+                revenue: {
+                    apple: data.totalRevenueApple,
+                    spotify: data.totalRevenueSpotify,
+                }
+            })
+        };
+
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating report', error: error.message });
+    }
+});
+
+router.post('/single-analytics', async (req, res) => {
+    try {
+        const singleAnalytics = new SingleAnalytics(req.body);
+        await singleAnalytics.save();
+        res.status(201).json({ message: 'Single Analytics created successfully!', data: singleAnalytics });
+    } catch (error) {
+        res.status(400).json({ message: 'Failed to create Single Analytics.', error: error.message });
+    }
+});
+
+// Get Single Analytics by Email and ID
+router.get('/single-analytics/:email/:id', async (req, res) => {
+    try {
+        const { email, id } = req.params;
+        const singleAnalytics = await SingleAnalytics.findOne({ email, _id: id });
+        if (!singleAnalytics) {
+            return res.status(404).json({ message: 'Single Analytics not found.' });
+        }
+        res.json(singleAnalytics);
+    } catch (error) {
+        res.status(500).json({ message: 'Error retrieving Single Analytics.', error: error.message });
+    }
+});
+
+// Update Single Analytics by Email and ID
+router.put('/single-analytics/:email/:id', async (req, res) => {
+    try {
+        const { email, id } = req.params;
+        const updatedAnalytics = await SingleAnalytics.findOneAndUpdate(
+            { email, _id: id },
+            req.body,
+            { new: true, runValidators: true }
+        );
+        if (!updatedAnalytics) {
+            return res.status(404).json({ message: 'Single Analytics not found.' });
+        }
+        res.json({ message: 'Single Analytics updated successfully!', data: updatedAnalytics });
+    } catch (error) {
+        res.status(400).json({ message: 'Failed to update Single Analytics.', error: error.message });
+    }
+});
+
+// Delete Single Analytics by Email and ID
+router.delete('/single-analytics/:email/:id', async (req, res) => {
+    try {
+        const { email, id } = req.params;
+        const deletedAnalytics = await SingleAnalytics.findOneAndDelete({ email, _id: id });
+        if (!deletedAnalytics) {
+            return res.status(404).json({ message: 'Single Analytics not found.' });
+        }
+        res.json({ message: 'Single Analytics deleted successfully!' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting Single Analytics.', error: error.message });
+    }
+});
 
 module.exports = router;
