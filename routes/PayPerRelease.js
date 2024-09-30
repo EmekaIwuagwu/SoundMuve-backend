@@ -110,7 +110,7 @@ router.post('/checkout', async (req, res) => {
                 },
             ],
             mode: 'payment',
-            success_url: 'https://img.freepik.com/free-vector/3d-style-safety-shield-logo-with-checkmark-sign-safe-access_1017-51232.jpg?semt=ais_hybrid',
+            success_url: 'https://img.freepik.com/free-vector/3d-style-safety-shield-logo-with-checkmark-sign-safe-access_1017-51232.jpg',
             cancel_url: 'https://c7.alamy.com/comp/HE551N/failed-stamp-sign-seal-HE551N.jpg',
         });
 
