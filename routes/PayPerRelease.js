@@ -43,27 +43,40 @@ router.post('/add-to-cart', async (req, res) => {
 
 // Apply promo code to cart
 router.post('/apply-promo', async (req, res) => {
-    const { email, code } = req.body;
+    const { email, code, itemId } = req.body; // Include itemId to identify the item in the cart
 
-    if (!email || !code) {
-        return res.status(400).json({ message: 'Email and promo code are required.' });
+    if (!email || !code || !itemId) {
+        return res.status(400).json({ message: 'Email, promo code, and item ID are required.' });
     }
 
     try {
+        // Find the cart by email
         const cart = await Cart.findOne({ email });
         if (!cart) {
             return res.status(404).json({ message: 'Cart is empty.' });
         }
 
+        // Check if the item exists in the cart by itemId
+        const itemInCart = cart.items.find(item => item._id.toString() === itemId);
+        if (!itemInCart) {
+            return res.status(404).json({ message: 'Item not found in the cart.' });
+        }
+
+        // Find the promo code
         const promo = await PromoCode.findOne({ code });
         if (!promo) {
             return res.status(404).json({ message: 'Invalid promo code.' });
         }
 
+        // Calculate discount
         const discountPercentage = promo.discount / 100;
-        const discountAmount = cart.total * discountPercentage;
-        cart.total -= discountAmount;
+        const discountAmount = itemInCart.price * discountPercentage; // Calculate discount based on the item's price
+        itemInCart.price -= discountAmount; // Update the item's price after applying the discount
 
+        // Recalculate total
+        cart.total = cart.items.reduce((total, item) => total + item.price, 0); // Recalculate total for the cart
+
+        // Save the updated cart
         await cart.save();
         res.json({ message: 'Promo code applied', cart });
     } catch (error) {
@@ -71,7 +84,9 @@ router.post('/apply-promo', async (req, res) => {
     }
 });
 
-// Checkout
+
+//Checkout
+
 router.post('/checkout', async (req, res) => {
     const { email } = req.body;
 
@@ -85,14 +100,14 @@ router.post('/checkout', async (req, res) => {
             return res.status(404).json({ message: 'Cart is empty.' });
         }
 
-        // Create a Stripe session
+        // Create a Stripe session with the reduced prices
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: cart.items.map(item => ({
                 price_data: {
                     currency: 'usd',
                     product_data: { name: item.name },
-                    unit_amount: Math.round(item.price * 100),
+                    unit_amount: Math.round(item.price * 100), // Use the updated item price
                 },
                 quantity: 1,
             })),
@@ -106,7 +121,7 @@ router.post('/checkout', async (req, res) => {
             email: cart.email,
             items: cart.items,
             total: cart.total,
-            paymentStatus: 'pending'
+            paymentStatus: 'pending', // Payment status can be set to pending initially
         });
         await order.save();
 
