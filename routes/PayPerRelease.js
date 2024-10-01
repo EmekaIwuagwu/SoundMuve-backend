@@ -103,69 +103,55 @@ router.post('/apply-promo', authenticateToken, async (req, res) => {
 
 // Checkout
 router.post('/checkout', authenticateToken, async (req, res) => {
-    const { email } = req.body;
+    const { email, paymentMethodId } = req.body;
 
-    if (!email) {
-        return res.status(400).json({ message: 'Email is required for checkout.' });
+    // Validate the required fields
+    if (!email || !paymentMethodId) {
+        return res.status(400).json({ message: 'Email and payment method are required for checkout.' });
     }
 
     try {
+        // Fetch the cart for the given email
         const cart = await Cart.findOne({ email });
         if (!cart || cart.items.length === 0) {
             return res.status(404).json({ message: 'Cart is empty.' });
         }
 
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
-            line_items: cart.items.map(item => ({
-                price_data: {
-                    currency: 'usd',
-                    product_data: { name: item.name },
-                    unit_amount: Math.round(item.price * 100),
-                },
-                quantity: 1,
-            })),
-            mode: 'payment',
-            success_url: 'http://localhost:3000/success',
-            cancel_url: 'http://localhost:3000/cancel',
+        // Create a payment intent
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(cart.total * 100), // Stripe expects amounts in cents
+            currency: 'usd',
+            payment_method: paymentMethodId, // Pass the payment method ID received from the frontend
+            confirmation_method: 'manual', // Manual confirmation
+            confirm: true, // Confirm the payment intent immediately
         });
 
+        // Create a new order
         const order = new Order({
             email: cart.email,
             items: cart.items,
             total: cart.total,
-            paymentStatus: 'pending',
+            paymentStatus: 'paid', // Set payment status to 'paid'
         });
         await order.save();
 
-        // Clear the cart after order completion
+        // Clear the cart after successful payment
         await Cart.findOneAndDelete({ email });
 
-        res.json({ id: session.id });
+        // Return the payment intent response to the client
+        res.json({
+            message: 'Payment successful',
+            paymentIntentId: paymentIntent.id, // Return the Payment Intent ID
+            order,
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error during checkout', error });
-    }
-});
-
-// Clear the cart after order completion
-router.delete('/clear-cart', authenticateToken, async (req, res) => {
-    const { email } = req.body;
-
-    if (!email) {
-        return res.status(400).json({ message: 'Email is required to clear the cart.' });
-    }
-
-    try {
-        const cart = await Cart.findOneAndDelete({ email }); // Deletes the cart for the specified email
-
-        if (!cart) {
-            return res.status(404).json({ message: 'Cart not found.' });
+        // Handle different error scenarios from Stripe API
+        if (error.type === 'StripeCardError') {
+            // Card was declined
+            return res.status(400).json({ message: 'Your card was declined.', error: error.message });
+        } else {
+            return res.status(500).json({ message: 'Error during checkout', error: error.message });
         }
-
-        res.json({ message: 'Cart cleared successfully.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error clearing the cart', error });
     }
 });
 
