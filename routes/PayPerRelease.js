@@ -117,39 +117,46 @@ router.post('/checkout', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'Cart is empty.' });
         }
 
-        // Create a payment intent
+        // Extract item information and the total price from the cart
+        const { items, total } = cart;
+
+        // Optionally log the cart items for debugging
+        console.log("Cart Items:", items);
+
+        // Create a payment intent with Stripe using the total amount
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(cart.total * 100), // Stripe expects amounts in cents
+            amount: Math.round(total * 100), // Stripe accepts the amount in cents
             currency: 'usd',
-            payment_method: paymentMethodId, // Pass the payment method ID received from the frontend
-            confirmation_method: 'manual', // Manual confirmation
-            confirm: true, // Confirm the payment intent immediately
+            payment_method: paymentMethodId, // Payment method ID passed from the frontend
+            confirmation_method: 'manual', // Manual confirmation for additional checks (optional)
+            confirm: true, // Immediately confirm the payment intent
         });
 
-        // Create a new order
+        // Create a new order in the database after successful payment
         const order = new Order({
             email: cart.email,
-            items: cart.items,
-            total: cart.total,
-            paymentStatus: 'paid', // Set payment status to 'paid'
+            items: cart.items, // Use the items from the cart
+            total: cart.total, // The total amount (after promo code application)
+            paymentStatus: 'paid', // Set the payment status as 'paid'
         });
-        await order.save();
+        await order.save(); // Save the order in the database
 
         // Clear the cart after successful payment
         await Cart.findOneAndDelete({ email });
 
-        // Return the payment intent response to the client
+        // Respond with the payment intent and the order details
         res.json({
             message: 'Payment successful',
-            paymentIntentId: paymentIntent.id, // Return the Payment Intent ID
-            order,
+            paymentIntentId: paymentIntent.id, // Return the Payment Intent ID for tracking
+            order, // Return the order details as part of the response
         });
     } catch (error) {
-        // Handle different error scenarios from Stripe API
+        // Handle Stripe-specific errors
         if (error.type === 'StripeCardError') {
-            // Card was declined
+            // The card was declined
             return res.status(400).json({ message: 'Your card was declined.', error: error.message });
         } else {
+            // Handle other potential errors
             return res.status(500).json({ message: 'Error during checkout', error: error.message });
         }
     }
