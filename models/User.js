@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     max: 255,
   },
+  teamType: {
+    type: String, // Add the teamType field
+    max: 255,
+  },
   balance: {
     type: mongoose.SchemaTypes.Number,
     required: true,
@@ -53,7 +57,7 @@ const userSchema = new mongoose.Schema({
   ],
   isKycSubmitted: {
     type: Boolean,
-    default: false,  // KYC status starts as false by default
+    default: false,
   },
   created_at: {
     type: Date,
@@ -61,4 +65,4 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model("User", userSchema);
