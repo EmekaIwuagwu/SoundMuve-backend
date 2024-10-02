@@ -435,55 +435,68 @@ router.delete('/single-analytics/:email/:id', async (req, res) => {
 router.get('/monthlyReport/:email', async (req, res) => {
     try {
         const { email } = req.params;
-        
-        // Get Album Analytics for the user
-        const albumData = await AlbumAnalytics.find({ email });
-        // Get Single Analytics for the user
-        const singleData = await SingleAnalytics.find({ email });
 
-        // Format the sales period
-        const salesPeriod = moment().format('MMM YYYY');
+        // Initialize an array to hold the reports for each month
+        const monthlyReports = [];
 
-        // Calculate totals
-        let albumSold = 0;
-        let singleSold = 0;
-        let totalStreamsApple = 0;
-        let totalStreamsSpotify = 0;
-        let totalRevenue = 0;
+        // Loop through each month of the year (0 = January, 11 = December)
+        for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+            const startOfMonth = moment().startOf('year').add(monthIndex, 'months').toDate(); // Start of the month
+            const endOfMonth = moment(startOfMonth).endOf('month').toDate(); // End of the month
 
-        // Process Album Data
-        albumData.forEach(album => {
-            albumSold += album.album_sold;
-            totalStreamsApple += album.stream.apple;
-            totalStreamsSpotify += album.stream.spotify;
-            totalRevenue += (album.revenue.apple + album.revenue.spotify);
-        });
+            // Get Album Analytics for the user for the specific month
+            const albumData = await AlbumAnalytics.find({
+                email,
+                created_at: { $gte: startOfMonth, $lte: endOfMonth }
+            });
 
-        // Process Single Data
-        singleData.forEach(single => {
-            singleSold += single.single_sold;
-            totalStreamsApple += single.stream.apple;
-            totalStreamsSpotify += single.stream.spotify;
-            totalRevenue += (single.revenue.apple + single.revenue.spotify);
-        });
+            // Get Single Analytics for the user for the specific month
+            const singleData = await SingleAnalytics.find({
+                email,
+                created_at: { $gte: startOfMonth, $lte: endOfMonth }
+            });
 
-        // Calculate the combined total streams for Apple and Spotify
-        const totalCombinedStreams = totalStreamsApple + totalStreamsSpotify;
+            // Initialize totals for the month
+            let albumSold = 0;
+            let singleSold = 0;
+            let totalStreamsApple = 0;
+            let totalStreamsSpotify = 0;
+            let totalRevenue = 0;
 
-        // Prepare the report
-        const report = {
-            sales_period: salesPeriod,
-            album_sold: albumSold,
-            single_sold: singleSold,
-            streams: {
-                apple: totalStreamsApple,
-                spotify: totalStreamsSpotify,
-                total_combined: totalCombinedStreams // Combined total streams
-            },
-            total_revenue: totalRevenue
-        };
+            // Process Album Data
+            albumData.forEach(album => {
+                albumSold += album.album_sold;
+                totalStreamsApple += album.stream.apple;
+                totalStreamsSpotify += album.stream.spotify;
+                totalRevenue += (album.revenue.apple + album.revenue.spotify);
+            });
 
-        res.json(report);
+            // Process Single Data
+            singleData.forEach(single => {
+                singleSold += single.single_sold;
+                totalStreamsApple += single.stream.apple;
+                totalStreamsSpotify += single.stream.spotify;
+                totalRevenue += (single.revenue.apple + single.revenue.spotify);
+            });
+
+            // Calculate the combined total streams for Apple and Spotify
+            const totalCombinedStreams = totalStreamsApple + totalStreamsSpotify;
+
+            // Prepare the monthly report
+            monthlyReports.push({
+                month: moment(startOfMonth).format('MMM YYYY'),
+                album_sold: albumSold,
+                single_sold: singleSold,
+                streams: {
+                    apple: totalStreamsApple,
+                    spotify: totalStreamsSpotify,
+                    total_combined: totalCombinedStreams // Combined total streams
+                },
+                total_revenue: totalRevenue
+            });
+        }
+
+        res.json(monthlyReports);
     } catch (error) {
         res.status(500).json({ message: 'Error generating report.', error: error.message });
     }
