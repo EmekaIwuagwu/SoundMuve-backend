@@ -39,13 +39,18 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
     let price = 0;
     let item = null;
 
-    // Determine the price and fetch the item based on type
+    // Check if id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid ID format.' });
+    }
+
+    // Fetch item based on type
     if (type === 'single') {
         price = 25;
-        item = await Song.findById(id);
+        item = await Song.findById(id);  // Make sure `id` is a valid ObjectId
     } else if (type === 'album') {
         price = 45;
-        item = await Album.findById(id);
+        item = await Album.findById(id);  // Make sure `id` is a valid ObjectId
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be single or album.' });
     }
@@ -62,7 +67,7 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
         }
 
         // Push the item details to the cart
-        cart.items.push({ type, id, price }); // Store the ID instead of name
+        cart.items.push({ type, id, price });  // Store the ObjectId instead of name
         cart.total += price;
 
         await cart.save();
