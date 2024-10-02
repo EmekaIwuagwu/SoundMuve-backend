@@ -38,19 +38,21 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
 
     let price = 0;
     let item = null;
+    let itemName = null;
 
-    // Check if id is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid ID format.' });
-    }
-
-    // Fetch item based on type
+    // Determine the price and fetch the item based on type
     if (type === 'single') {
         price = 25;
-        item = await Song.findById(id);  // Make sure `id` is a valid ObjectId
+        item = await Song.findById(id);
+        if (item) {
+            itemName = item.song_title;  // Fetch the song name
+        }
     } else if (type === 'album') {
         price = 45;
-        item = await Album.findById(id);  // Make sure `id` is a valid ObjectId
+        item = await Album.findById(id);
+        if (item) {
+            itemName = item.album_title;  // Fetch the album name
+        }
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be single or album.' });
     }
@@ -66,8 +68,8 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
             cart = new Cart({ email, items: [], total: 0 });
         }
 
-        // Push the item details to the cart
-        cart.items.push({ type, id, price });  // Store the ObjectId instead of name
+        // Push the item details to the cart, including the name
+        cart.items.push({ type, id, name: itemName, price });  // Now including the name field
         cart.total += price;
 
         await cart.save();
@@ -77,6 +79,7 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Error adding to cart', error: error.message });
     }
 });
+
 
 // Apply promo code to cart
 router.post('/apply-promo', authenticateToken, async (req, res) => {
