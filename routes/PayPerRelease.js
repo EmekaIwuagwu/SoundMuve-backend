@@ -32,6 +32,7 @@ const authenticateToken = (req, res, next) => {
 router.post('/add-to-cart', authenticateToken, async (req, res) => {
     const { email, items } = req.body; // Accepting an array of items
 
+    // Validate the input
     if (!email || !items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: 'Email and items are required. Items should be an array.' });
     }
@@ -45,6 +46,7 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
         for (const itemData of items) {
             const { type, _id } = itemData; // Destructure type and _id from each item
 
+            // Validate each item's input
             if (!type || !_id) {
                 return res.status(400).json({ message: 'Type and _id are required for each item.' });
             }
@@ -55,15 +57,21 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
             // Determine the price and fetch the item based on type
             if (type === 'single') {
                 price = 25;
+                console.log(`Looking for single with ID ${_id}`);
                 const item = await Song.findById(_id); // Use _id here
                 if (item) {
                     itemName = item.song_title; // Fetch the song name
+                } else {
+                    console.log(`Single with ID ${_id} not found`);
                 }
             } else if (type === 'album') {
                 price = 45;
+                console.log(`Looking for album with ID ${_id}`);
                 const item = await Album.findById(_id); // Use _id here
                 if (item) {
                     itemName = item.album_title; // Fetch the album name
+                } else {
+                    console.log(`Album with ID ${_id} not found`);
                 }
             } else {
                 return res.status(400).json({ message: 'Invalid type. Must be single or album.' });
@@ -71,7 +79,7 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
 
             // Check if the item exists
             if (!itemName) {
-                return res.status(404).json({ message: `${type} with ID ${_id} not found.` });
+                return res.status(404).json({ message: `${type} with _id ${_id} not found.` });
             }
 
             // Push the item details to the cart
