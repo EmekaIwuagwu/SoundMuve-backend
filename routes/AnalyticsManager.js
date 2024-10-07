@@ -115,7 +115,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
                     $match: {
                         created_at: { $gte: startOfMonth, $lte: endOfMonth },
                         email: email,   // Filter by email
-                        [type === 'album' ? 'album_name' : 'single_name']: song_title  // Filter by song title for album or single
+                        [type === 'album' ? 'album_title' : 'song_title']: song_title  // Filter by song title for album or single
                     }
                 },
                 {
@@ -156,7 +156,6 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
-
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
