@@ -98,10 +98,11 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
 
 // Apply promo code to cart
 router.post('/apply-promo', authenticateToken, async (req, res) => {
-    const { email, code, itemId } = req.body;
+    const { email, code, itemIds } = req.body; // Accept an array of item IDs
 
-    if (!email || !code || !itemId) {
-        return res.status(400).json({ message: 'Email, promo code, and item ID are required.' });
+    // Validate the input
+    if (!email || !code || !itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+        return res.status(400).json({ message: 'Email, promo code, and item IDs are required. Item IDs should be an array.' });
     }
 
     try {
@@ -111,31 +112,46 @@ router.post('/apply-promo', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'Cart not found.' });
         }
 
-        const itemInCart = cart.items.find(item => item._id.toString() === itemId);
-        if (!itemInCart) {
-            return res.status(404).json({ message: 'Item not found in the cart.' });
-        }
-
         const promo = await PromoCode.findOne({ code });
         if (!promo) {
             return res.status(404).json({ message: 'Invalid promo code.' });
         }
 
         const discountPercentage = promo.discount / 100;
-        const discountAmount = itemInCart.price * discountPercentage;
 
-        const originalPrice = itemInCart.price;
-        itemInCart.price -= discountAmount;
+        // Track the original prices and apply the discount to each specified item
+        const originalPrices = [];
+        const itemsToDiscount = [];
 
+        for (const itemId of itemIds) {
+            const itemInCart = cart.items.find(item => item._id.toString() === itemId);
+
+            if (!itemInCart) {
+                return res.status(404).json({ message: `Item with ID ${itemId} not found in the cart.` });
+            }
+
+            // Calculate the discount amount
+            const discountAmount = itemInCart.price * discountPercentage;
+
+            // Store the original price
+            originalPrices.push({ itemId, originalPrice: itemInCart.price });
+
+            // Apply the discount
+            itemInCart.price -= discountAmount;
+            itemsToDiscount.push(itemInCart); // Keep track of discounted items
+        }
+
+        // Recalculate the total
         cart.total = cart.items.reduce((total, item) => total + item.price, 0);
 
         await cart.save();
-        res.json({ message: 'Promo code applied', cart, originalPrice });
+        res.json({ message: 'Promo code applied', cart, originalPrices, itemsToDiscount });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error applying promo code', error: error.message });
     }
 });
+
 
 // Checkout
 router.post('/checkout', authenticateToken, async (req, res) => {
