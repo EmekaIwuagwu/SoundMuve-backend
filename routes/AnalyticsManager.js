@@ -165,12 +165,13 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         const currentDate = new Date();
         const startOfYear = new Date(currentDate.getFullYear(), 0, 1); // Start of the current year
 
-        console.log(`Searching for song with ID: ${Id} and email: ${email}`);
-
         let model;
         if (type === 'album') model = AlbumAnalytics;
         else if (type === 'single') model = SingleAnalytics;
         else return res.status(400).json({ message: 'Invalid type' });
+
+        // Log the ID and email being searched
+        console.log(`Searching for song with ID: ${Id} and email: ${email}`);
 
         // Find the user by email
         const user = await User.findOne({ email: email.trim() });
@@ -184,23 +185,10 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
             {
                 $match: {
                     created_at: { $gte: startOfYear },
-                    song_id: Id // Ensure this field is correct
-                }
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalAppleRevenue: { $sum: '$revenue.apple' },
-                    totalSpotifyRevenue: { $sum: '$revenue.spotify' },
-                    totalAppleStreams: { $sum: '$stream.apple' },
-                    totalSpotifyStreams: { $sum: '$stream.spotify' },
-                    totalAppleStreamTime: { $sum: '$streamTime.apple' },
-                    totalSpotifyStreamTime: { $sum: '$streamTime.spotify' }
+                    album_id: song.album_id // Changed from song_id to album_id
                 }
             }
         ]);
-
-        console.log(`Aggregation results: ${JSON.stringify(results)}`);
 
         const response = results[0] || {
             totalAppleRevenue: 0,
@@ -230,7 +218,7 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                 },
                 user: {
                     email: user.email,
-                    balance: user.balance,
+                    balance: user.balance, // Include user balance if needed
                 }
             }
         });
@@ -239,6 +227,7 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
 
 
 router.post('/locations', async (req, res) => {
