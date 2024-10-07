@@ -30,36 +30,10 @@ const authenticateToken = (req, res, next) => {
 
 // Add item to cart
 router.post('/add-to-cart', authenticateToken, async (req, res) => {
-    const { email, type, id } = req.body;
+    const { email, items } = req.body; // Accepting an array of items
 
-    if (!email || !type || !id) {
-        return res.status(400).json({ message: 'Email, type, and id are required.' });
-    }
-
-    let price = 0;
-    let item = null;
-    let itemName = null;
-
-    // Determine the price and fetch the item based on type
-    if (type === 'single') {
-        price = 25;
-        item = await Song.findById(id);
-        if (item) {
-            itemName = item.song_title;  // Fetch the song name
-        }
-    } else if (type === 'album') {
-        price = 45;
-        item = await Album.findById(id);
-        if (item) {
-            itemName = item.album_title;  // Fetch the album name
-        }
-    } else {
-        return res.status(400).json({ message: 'Invalid type. Must be single or album.' });
-    }
-
-    // Check if the item exists
-    if (!item) {
-        return res.status(404).json({ message: `${type} not found.` });
+    if (!email || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: 'Email and items are required. Items should be an array.' });
     }
 
     try {
@@ -68,18 +42,50 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
             cart = new Cart({ email, items: [], total: 0 });
         }
 
-        // Push the item details to the cart, including the name
-        cart.items.push({ type, id, name: itemName, price });  // Now including the name field
-        cart.total += price;
+        for (const itemData of items) {
+            const { type, id } = itemData; // Destructure type and id from each item
+
+            if (!type || !id) {
+                return res.status(400).json({ message: 'Type and id are required for each item.' });
+            }
+
+            let price = 0;
+            let itemName = null;
+
+            // Determine the price and fetch the item based on type
+            if (type === 'single') {
+                price = 25;
+                const item = await Song.findById(id);
+                if (item) {
+                    itemName = item.song_title; // Fetch the song name
+                }
+            } else if (type === 'album') {
+                price = 45;
+                const item = await Album.findById(id);
+                if (item) {
+                    itemName = item.album_title; // Fetch the album name
+                }
+            } else {
+                return res.status(400).json({ message: 'Invalid type. Must be single or album.' });
+            }
+
+            // Check if the item exists
+            if (!itemName) {
+                return res.status(404).json({ message: `${type} with ID ${id} not found.` });
+            }
+
+            // Push the item details to the cart
+            cart.items.push({ type, id, name: itemName, price });
+            cart.total += price; // Increment total
+        }
 
         await cart.save();
 
-        res.json({ message: `${type} added to cart`, cart });
+        res.json({ message: 'Items added to cart', cart });
     } catch (error) {
         res.status(500).json({ message: 'Error adding to cart', error: error.message });
     }
 });
-
 
 // Apply promo code to cart
 router.post('/apply-promo', authenticateToken, async (req, res) => {
