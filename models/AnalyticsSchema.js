@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const albumAnalyticsSchema = new mongoose.Schema({
     email: { type: String, required: true },
     album_name: { type: String, required: true },
+    album_id: { type: String, required: true },
     album_sold: { type: Number, required: true },
     stream: {
         apple: { type: Number, required: true },
@@ -26,6 +27,7 @@ const AlbumAnalytics = mongoose.model('AlbumAnalytics', albumAnalyticsSchema);
 const singleAnalyticsSchema = new mongoose.Schema({
     email: { type: String, required: true },
     single_name: { type: String, required: true },
+    singles_id: { type: String, required: true },
     single_sold: { type: Number, required: true },
     stream: {
         apple: { type: Number, required: true },
