@@ -193,25 +193,31 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         console.log(`Aggregation results: ${JSON.stringify(results)}`); // Log aggregation results
 
         const response = results[0] || {
-            totalAppleRevenue: 0,
-            totalSpotifyRevenue: 0,
-            totalAppleStreams: 0,
-            totalSpotifyStreams: 0,
-            totalAppleStreamTime: 0,
-            totalSpotifyStreamTime: 0
+            revenue: {
+                apple: 0,
+                spotify: 0
+            },
+            stream: {
+                apple: 0,
+                spotify: 0
+            },
+            streamTime: {
+                apple: 0,
+                spotify: 0
+            }
         };
 
         res.json({
             analytics: {
                 apple: {
-                    revenue: response.totalAppleRevenue,
-                    streams: response.totalAppleStreams,
-                    streamTime: response.totalAppleStreamTime
+                    revenue: response.revenue.apple,  // Correctly reference revenue for apple
+                    streams: response.stream.apple,   // Correctly reference streams for apple
+                    streamTime: response.streamTime.apple // Correctly reference streamTime for apple
                 },
                 spotify: {
-                    revenue: response.totalSpotifyRevenue,
-                    streams: response.totalSpotifyStreams,
-                    streamTime: response.totalSpotifyStreamTime
+                    revenue: response.revenue.spotify,  // Correctly reference revenue for spotify
+                    streams: response.stream.spotify,   // Correctly reference streams for spotify
+                    streamTime: response.streamTime.spotify // Correctly reference streamTime for spotify
                 },
                 song: {
                     id: Id,
