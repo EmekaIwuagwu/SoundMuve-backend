@@ -88,7 +88,7 @@ router.delete('/album-analytics/:id', async (req, res) => {
 // Get Total Apple and Spotify Revenue by Month for a User
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
-        const { type, year, email, song_title } = req.query; // Added 'song_title' to filter by a specific song.
+        const { type, year, email, song_title } = req.query; // 'song_title' filters by a specific album or single name.
 
         // Validate required parameters
         if (!year) return res.status(400).json({ message: 'Year is required' });
@@ -96,9 +96,13 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         if (!song_title) return res.status(400).json({ message: 'Song title is required' });
 
         let model;
-        if (type === 'album') model = AlbumAnalytics;
-        else if (type === 'single') model = SingleAnalytics;  // Ensure this is correct
-        else return res.status(400).json({ message: 'Invalid type' });
+        if (type === 'album') {
+            model = AlbumAnalytics;
+        } else if (type === 'single') {
+            model = SingleAnalytics;
+        } else {
+            return res.status(400).json({ message: 'Invalid type' });
+        }
 
         const monthlyData = [];
 
@@ -110,12 +114,13 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
             startOfMonth.setHours(0, 0, 0, 0);
             endOfMonth.setHours(23, 59, 59, 999);
 
+            // Perform aggregation based on the type (album or single)
             const results = await model.aggregate([
                 {
                     $match: {
                         created_at: { $gte: startOfMonth, $lte: endOfMonth },
-                        email: email,   // Filter by email
-                        [type === 'album' ? 'album_title' : 'single_name']: song_title  // Corrected to use 'single_name'
+                        email: email.trim(),  // Filter by email
+                        [type === 'album' ? 'album_name' : 'single_name']: song_title.trim()  // Dynamic field based on type
                     }
                 },
                 {
@@ -134,8 +139,9 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 
             // Calculate total revenue and percentage value
             const totalRevenue = totalData.totalAppleRevenue + totalData.totalSpotifyRevenue;
-            const percentageValue = totalRevenue ?
-                (totalData.totalAppleRevenue / totalRevenue) * 100 : 0;
+            const percentageValue = totalRevenue
+                ? (totalData.totalAppleRevenue / totalRevenue) * 100
+                : 0;
 
             // Format month name
             const monthName = startOfMonth.toLocaleString('default', { month: 'short' });
@@ -153,6 +159,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         // Return all monthly data
         res.json(monthlyData);
     } catch (error) {
+        console.error(error); // Log the error for debugging
         res.status(400).json({ message: error.message });
     }
 });
