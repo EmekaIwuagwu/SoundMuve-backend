@@ -97,7 +97,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 
         let model;
         if (type === 'album') model = AlbumAnalytics;
-        else if (type === 'single') model = SingleAnalytics;
+        else if (type === 'single') model = SingleAnalytics;  // Ensure this is correct
         else return res.status(400).json({ message: 'Invalid type' });
 
         const monthlyData = [];
@@ -115,7 +115,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
                     $match: {
                         created_at: { $gte: startOfMonth, $lte: endOfMonth },
                         email: email,   // Filter by email
-                        [type === 'album' ? 'album_title' : 'song_title']: song_title  // Filter by song title for album or single
+                        [type === 'album' ? 'album_title' : 'single_name']: song_title  // Corrected to use 'single_name'
                     }
                 },
                 {
@@ -156,6 +156,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
