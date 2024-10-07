@@ -43,10 +43,10 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
         }
 
         for (const itemData of items) {
-            const { type, id } = itemData; // Destructure type and id from each item
+            const { type, _id } = itemData; // Destructure type and _id from each item
 
-            if (!type || !id) {
-                return res.status(400).json({ message: 'Type and id are required for each item.' });
+            if (!type || !_id) {
+                return res.status(400).json({ message: 'Type and _id are required for each item.' });
             }
 
             let price = 0;
@@ -55,13 +55,13 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
             // Determine the price and fetch the item based on type
             if (type === 'single') {
                 price = 25;
-                const item = await Song.findById(id);
+                const item = await Song.findById(_id); // Use _id here
                 if (item) {
                     itemName = item.song_title; // Fetch the song name
                 }
             } else if (type === 'album') {
                 price = 45;
-                const item = await Album.findById(id);
+                const item = await Album.findById(_id); // Use _id here
                 if (item) {
                     itemName = item.album_title; // Fetch the album name
                 }
@@ -71,11 +71,11 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
 
             // Check if the item exists
             if (!itemName) {
-                return res.status(404).json({ message: `${type} with ID ${id} not found.` });
+                return res.status(404).json({ message: `${type} with ID ${_id} not found.` });
             }
 
             // Push the item details to the cart
-            cart.items.push({ type, id, name: itemName, price });
+            cart.items.push({ type, _id, name: itemName, price }); // Store _id instead of id
             cart.total += price; // Increment total
         }
 
@@ -86,6 +86,7 @@ router.post('/add-to-cart', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Error adding to cart', error: error.message });
     }
 });
+
 
 // Apply promo code to cart
 router.post('/apply-promo', authenticateToken, async (req, res) => {
