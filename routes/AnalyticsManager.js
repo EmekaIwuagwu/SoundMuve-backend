@@ -185,10 +185,12 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
             {
                 $match: {
                     created_at: { $gte: startOfYear },
-                    album_id: song.album_id // Changed from song_id to album_id
+                    singles_id: Id.trim()  // Match against singles_id
                 }
             }
         ]);
+
+        console.log(`Aggregation results: ${JSON.stringify(results)}`); // Log aggregation results
 
         const response = results[0] || {
             totalAppleRevenue: 0,
@@ -214,11 +216,11 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                 song: {
                     id: Id,
                     title: song.song_title,
-                    albumId: song.album_id,
+                    albumId: song.album_id, // Ensure this property exists on the song object
                 },
                 user: {
                     email: user.email,
-                    balance: user.balance, // Include user balance if needed
+                    balance: user.balance,
                 }
             }
         });
@@ -227,7 +229,6 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
-
 
 
 router.post('/locations', async (req, res) => {
