@@ -7,8 +7,11 @@ const { AlbumAnalytics, SingleAnalytics, Store, Location } = require('../models/
 const jwt = require('jsonwebtoken');
 
 async function findArtistByName(artistName) {
-    return await ArtistForRecordLabel.findOne({ artistName });
+    const artist = await ArtistForRecordLabel.findOne({ artistName });
+    console.log(artist); // Log to see the returned artist object
+    return artist; // Ensure this returns the artist object
 }
+
 // Middleware to check token
 const checkToken = (req, res, next) => {
     // Get token from header
