@@ -631,7 +631,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
                 {
                     $match: {
                         created_at: { $gte: startOfMonth, $lte: endOfMonth },
-                        email: artist.artistName,  // Use artist's email
+                        artist_name: artist.artistName,  // Use artist's email
                         [type === 'album' ? 'album_name' : 'single_name']: song_title.trim()
                     }
                 },
@@ -734,7 +734,7 @@ router.get('/locations/artist/:artistName', async (req, res) => {
         const artist = await findArtistByName(artistName);
         if (!artist) return res.status(404).send({ message: 'Artist not found' });
 
-        const locations = await Location.find({ email: artist.artistName });
+        const locations = await Location.find({ artist_name: artist.artistName });
 
         if (locations.length === 0) {
             return res.status(404).send({ message: 'No locations found for this artist' });
@@ -763,7 +763,7 @@ router.get('/generate-report', async (req, res) => {
 
         if (type === 'album') {
             reportData = await AlbumAnalytics.aggregate([
-                { $match: { email: artist.artistName } },
+                { $match: { artist_name: artist.artistName } },
                 {
                     $group: {
                         _id: '$album_name',
@@ -785,7 +785,7 @@ router.get('/generate-report', async (req, res) => {
             return res.json(data);
         } else if (type === 'single') {
             reportData = await SingleAnalytics.aggregate([
-                { $match: { email: artist.email } },
+                { $match: { artist_name: artist.artistName } },
                 {
                     $group: {
                         _id: '$single_name',
@@ -823,7 +823,7 @@ router.get('/monthlyReport/:artistName', async (req, res) => {
         if (!artist) return res.status(404).json({ message: 'Artist not found' });
 
         const data = await AlbumAnalytics.aggregate([
-            { $match: { email: artist.artistName } },
+            { $match: { artist_name: artist.artistName } },
             {
                 $group: {
                     _id: { $month: '$created_at' },
