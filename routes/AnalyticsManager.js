@@ -6,6 +6,9 @@ const User = require('../models/User');
 const { AlbumAnalytics, SingleAnalytics, Store, Location } = require('../models/AnalyticsSchema');
 const jwt = require('jsonwebtoken');
 
+async function findArtistByName(artistName) {
+    return await ArtistForRecordLabel.findOne({ artistName });
+}
 // Middleware to check token
 const checkToken = (req, res, next) => {
     // Get token from header
@@ -590,7 +593,6 @@ router.get('/userReport/:email', async (req, res) => {
         res.status(500).json({ message: 'Error generating report.', error: error.message });
     }
 });
-
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
         const { type, year, artistName, song_title } = req.query; // Using artistName instead of email
@@ -611,6 +613,8 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 
         // Find artist by name
         const artist = await findArtistByName(artistName);
+        if (!artist) return res.status(404).json({ message: 'Artist not found' });
+
         const monthlyData = [];
 
         for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
@@ -671,6 +675,7 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
 
         // Find artist by name
         const artist = await findArtistByName(artistName);
+        if (!artist) return res.status(404).json({ message: 'Artist not found' });
 
         const results = await model.aggregate([
             {
@@ -723,6 +728,8 @@ router.get('/locations/artist/:artistName', async (req, res) => {
 
         // Find artist by name
         const artist = await findArtistByName(artistName);
+        if (!artist) return res.status(404).send({ message: 'Artist not found' });
+
         const locations = await Location.find({ email: artist.email });
 
         if (locations.length === 0) {
@@ -748,6 +755,7 @@ router.get('/generate-report', async (req, res) => {
 
         // Find artist by name
         const artist = await findArtistByName(artistName);
+        if (!artist) return res.status(404).json({ message: 'Artist not found' });
 
         if (type === 'album') {
             reportData = await AlbumAnalytics.aggregate([
@@ -808,56 +816,23 @@ router.get('/monthlyReport/:artistName', async (req, res) => {
 
         // Find artist by name
         const artist = await findArtistByName(artistName);
-        const monthlyReports = [];
+        if (!artist) return res.status(404).json({ message: 'Artist not found' });
 
-        for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-            const startOfMonth = moment().startOf('year').add(monthIndex, 'months').toDate();
-            const endOfMonth = moment(startOfMonth).endOf('month').toDate();
-
-            const albumMonthly = await AlbumAnalytics.aggregate([
-                {
-                    $match: {
-                        email: artist.email,
-                        created_at: { $gte: startOfMonth, $lte: endOfMonth }
-                    }
-                },
-                {
-                    $group: {
-                        _id: '$album_name',
-                        totalRevenueApple: { $sum: '$revenue.apple' },
-                        totalRevenueSpotify: { $sum: '$revenue.spotify' },
-                    }
+        const data = await AlbumAnalytics.aggregate([
+            { $match: { email: artist.email } },
+            {
+                $group: {
+                    _id: { $month: '$created_at' },
+                    totalAlbumSold: { $sum: '$album_sold' },
+                    totalRevenue: { $sum: { $add: ['$revenue.apple', '$revenue.spotify'] } },
                 }
-            ]);
+            },
+            { $sort: { _id: 1 } }
+        ]);
 
-            const singleMonthly = await SingleAnalytics.aggregate([
-                {
-                    $match: {
-                        email: artist.email,
-                        created_at: { $gte: startOfMonth, $lte: endOfMonth }
-                    }
-                },
-                {
-                    $group: {
-                        _id: '$single_name',
-                        totalRevenueApple: { $sum: '$revenue.apple' },
-                        totalRevenueSpotify: { $sum: '$revenue.spotify' },
-                    }
-                }
-            ]);
-
-            const data = {
-                month: moment(startOfMonth).format('MMMM'),
-                album_revenue: albumMonthly.reduce((acc, item) => acc + item.totalRevenueApple + item.totalRevenueSpotify, 0),
-                single_revenue: singleMonthly.reduce((acc, item) => acc + item.totalRevenueApple + item.totalRevenueSpotify, 0)
-            };
-
-            monthlyReports.push(data);
-        }
-
-        res.status(200).send(monthlyReports);
+        res.json(data);
     } catch (error) {
-        res.status(500).send({ message: error.message });
+        res.status(500).json({ message: 'Error generating monthly report', error: error.message });
     }
 });
 
