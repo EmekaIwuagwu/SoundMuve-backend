@@ -3,6 +3,7 @@ const moment = require('moment');
 const router = express.Router();
 const Song = require('../models/Song');
 const User = require('../models/User');
+const Artist = require('../models/RecordLabelManager');
 const { AlbumAnalytics, SingleAnalytics, Store, Location } = require('../models/AnalyticsSchema');
 const jwt = require('jsonwebtoken');
 
