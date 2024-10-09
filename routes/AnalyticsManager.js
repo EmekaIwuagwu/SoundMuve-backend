@@ -726,7 +726,7 @@ router.get('/analytics/artist-revenue-yearly', async (req, res) => {
 });
 
 // Endpoint 3: Get locations by artist name
-router.get('/locations/artist/:artistName', async (req, res) => {
+router.get('/locations/artistLocation/:artistName', async (req, res) => {
     try {
         const { artistName } = req.params;
 
@@ -747,7 +747,7 @@ router.get('/locations/artist/:artistName', async (req, res) => {
 });
 
 // Endpoint 4: Generate report by artist name
-router.get('/generate-report', async (req, res) => {
+router.get('/artist-generate-report', async (req, res) => {
     try {
         const { type, artistName } = req.query;
         
@@ -814,7 +814,7 @@ router.get('/generate-report', async (req, res) => {
 });
 
 // Endpoint 5: Monthly report by artist name
-router.get('/monthlyReport/:artistName', async (req, res) => {
+router.get('/artistmonthlyReport/:artistName', async (req, res) => {
     try {
         const { artistName } = req.params;
 
