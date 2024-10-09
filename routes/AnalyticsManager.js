@@ -597,7 +597,7 @@ router.get('/userReport/:email', async (req, res) => {
 });
 
 // Endpoint 1: Monthly revenue analytics by artist name
-router.get('/analytics/revenue-monthly', async (req, res) => {
+router.get('/analytics/artist-revenue-monthly', async (req, res) => {
     try {
         const { type, year, artistName, song_title } = req.query;
         
@@ -666,7 +666,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 });
 
 // Endpoint 2: Get yearly revenue analytics by artist name
-router.get('/analytics/revenue-yearly', async (req, res) => {
+router.get('/analytics/artist-revenue-yearly', async (req, res) => {
     try {
         const { type, Id, artistName } = req.query;
         const currentDate = new Date();
