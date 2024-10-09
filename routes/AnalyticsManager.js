@@ -7,9 +7,8 @@ const { AlbumAnalytics, SingleAnalytics, Store, Location } = require('../models/
 const jwt = require('jsonwebtoken');
 
 async function findArtistByName(artistName) {
-    const artist = await ArtistForRecordLabel.findOne({ artistName });
-    console.log(artist); // Log to see the returned artist object
-    return artist; // Ensure this returns the artist object
+    const artist = await Artist.findOne({ artistName: artistName });
+    return artist;
 }
 
 // Middleware to check token
@@ -597,9 +596,10 @@ router.get('/userReport/:email', async (req, res) => {
     }
 });
 
+// Endpoint 1: Monthly revenue analytics by artist name
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
-        const { type, year, artistName, song_title } = req.query; // Using artistName instead of email
+        const { type, year, artistName, song_title } = req.query;
         
         // Validate required parameters
         if (!year) return res.status(400).json({ message: 'Year is required' });
@@ -622,8 +622,8 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
         const monthlyData = [];
 
         for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-            const startOfMonth = new Date(year, monthIndex, 1); // Start of the month
-            const endOfMonth = new Date(year, monthIndex + 1, 0); // End of the month
+            const startOfMonth = new Date(year, monthIndex, 1);
+            const endOfMonth = new Date(year, monthIndex + 1, 0);
             startOfMonth.setHours(0, 0, 0, 0);
             endOfMonth.setHours(23, 59, 59, 999);
 
@@ -631,7 +631,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
                 {
                     $match: {
                         created_at: { $gte: startOfMonth, $lte: endOfMonth },
-                        artist_name: artist.artistName,  // Use artist's email
+                        artist_name: artist.artistName,  // Use artist's name
                         [type === 'album' ? 'album_name' : 'single_name']: song_title.trim()
                     }
                 },
@@ -668,7 +668,7 @@ router.get('/analytics/revenue-monthly', async (req, res) => {
 // Endpoint 2: Get yearly revenue analytics by artist name
 router.get('/analytics/revenue-yearly', async (req, res) => {
     try {
-        const { type, Id, artistName } = req.query; // Using artistName instead of email
+        const { type, Id, artistName } = req.query;
         const currentDate = new Date();
         const startOfYear = new Date(currentDate.getFullYear(), 0, 1); // Start of the current year
 
@@ -710,7 +710,7 @@ router.get('/analytics/revenue-yearly', async (req, res) => {
                 },
                 song: {
                     id: Id,
-                    title: 'Unknown', // Adjust this if needed
+                    title: 'Unknown',
                     albumId: 'Unknown'
                 },
                 artist: {
@@ -749,7 +749,7 @@ router.get('/locations/artist/:artistName', async (req, res) => {
 // Endpoint 4: Generate report by artist name
 router.get('/generate-report', async (req, res) => {
     try {
-        const { type, artistName } = req.query; // Using artistName instead of email
+        const { type, artistName } = req.query;
         
         if (!type || !artistName) {
             return res.status(400).json({ message: 'Type and artist name are required' });
@@ -840,4 +840,5 @@ router.get('/monthlyReport/:artistName', async (req, res) => {
     }
 });
 
+// Helper function to find artist by name
 module.exports = router;
