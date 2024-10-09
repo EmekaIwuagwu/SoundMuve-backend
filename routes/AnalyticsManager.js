@@ -591,4 +591,274 @@ router.get('/userReport/:email', async (req, res) => {
     }
 });
 
+router.get('/analytics/revenue-monthly', async (req, res) => {
+    try {
+        const { type, year, artistName, song_title } = req.query; // Using artistName instead of email
+        
+        // Validate required parameters
+        if (!year) return res.status(400).json({ message: 'Year is required' });
+        if (!artistName) return res.status(400).json({ message: 'Artist name is required' });
+        if (!song_title) return res.status(400).json({ message: 'Song title is required' });
+
+        let model;
+        if (type === 'album') {
+            model = AlbumAnalytics;
+        } else if (type === 'single') {
+            model = SingleAnalytics;
+        } else {
+            return res.status(400).json({ message: 'Invalid type' });
+        }
+
+        // Find artist by name
+        const artist = await findArtistByName(artistName);
+        const monthlyData = [];
+
+        for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+            const startOfMonth = new Date(year, monthIndex, 1); // Start of the month
+            const endOfMonth = new Date(year, monthIndex + 1, 0); // End of the month
+            startOfMonth.setHours(0, 0, 0, 0);
+            endOfMonth.setHours(23, 59, 59, 999);
+
+            const results = await model.aggregate([
+                {
+                    $match: {
+                        created_at: { $gte: startOfMonth, $lte: endOfMonth },
+                        email: artist.email,  // Use artist's email
+                        [type === 'album' ? 'album_name' : 'single_name']: song_title.trim()
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalAppleRevenue: { $sum: '$revenue.apple' },
+                        totalSpotifyRevenue: { $sum: '$revenue.spotify' },
+                    }
+                }
+            ]);
+
+            const totalData = results[0] || { totalAppleRevenue: 0, totalSpotifyRevenue: 0 };
+            const totalRevenue = totalData.totalAppleRevenue + totalData.totalSpotifyRevenue;
+            const percentageValue = totalRevenue ? (totalData.totalAppleRevenue / totalRevenue) * 100 : 0;
+
+            const monthName = startOfMonth.toLocaleString('default', { month: 'short' });
+            monthlyData.push({
+                percentageValue: percentageValue.toFixed(2),
+                month: monthName,
+                totalRevenue: totalRevenue.toFixed(2),
+                totalAppleRevenue: totalData.totalAppleRevenue.toFixed(2),
+                totalSpotifyRevenue: totalData.totalSpotifyRevenue.toFixed(2),
+            });
+        }
+
+        res.json(monthlyData);
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Endpoint 2: Get yearly revenue analytics by artist name
+router.get('/analytics/revenue-yearly', async (req, res) => {
+    try {
+        const { type, Id, artistName } = req.query; // Using artistName instead of email
+        const currentDate = new Date();
+        const startOfYear = new Date(currentDate.getFullYear(), 0, 1); // Start of the current year
+
+        let model;
+        if (type === 'album') model = AlbumAnalytics;
+        else if (type === 'single') model = SingleAnalytics;
+        else return res.status(400).json({ message: 'Invalid type' });
+
+        // Find artist by name
+        const artist = await findArtistByName(artistName);
+
+        const results = await model.aggregate([
+            {
+                $match: {
+                    created_at: { $gte: startOfYear },
+                    singles_id: Id.trim()
+                }
+            }
+        ]);
+
+        const response = results[0] || {
+            revenue: { apple: 0, spotify: 0 },
+            stream: { apple: 0, spotify: 0 },
+            streamTime: { apple: 0, spotify: 0 }
+        };
+
+        res.json({
+            analytics: {
+                apple: {
+                    revenue: response.revenue.apple,
+                    streams: response.stream.apple,
+                    streamTime: response.streamTime.apple
+                },
+                spotify: {
+                    revenue: response.revenue.spotify,
+                    streams: response.stream.spotify,
+                    streamTime: response.streamTime.spotify
+                },
+                song: {
+                    id: Id,
+                    title: 'Unknown', // Adjust this if needed
+                    albumId: 'Unknown'
+                },
+                artist: {
+                    name: artist.artistName,
+                    balance: 0 // Add balance handling if required
+                }
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Endpoint 3: Get locations by artist name
+router.get('/locations/artist/:artistName', async (req, res) => {
+    try {
+        const { artistName } = req.params;
+
+        // Find artist by name
+        const artist = await findArtistByName(artistName);
+        const locations = await Location.find({ email: artist.email });
+
+        if (locations.length === 0) {
+            return res.status(404).send({ message: 'No locations found for this artist' });
+        }
+
+        res.status(200).send(locations);
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+});
+
+// Endpoint 4: Generate report by artist name
+router.get('/generate-report', async (req, res) => {
+    try {
+        const { type, artistName } = req.query; // Using artistName instead of email
+        
+        if (!type || !artistName) {
+            return res.status(400).json({ message: 'Type and artist name are required' });
+        }
+
+        let reportData;
+
+        // Find artist by name
+        const artist = await findArtistByName(artistName);
+
+        if (type === 'album') {
+            reportData = await AlbumAnalytics.aggregate([
+                { $match: { email: artist.email } },
+                {
+                    $group: {
+                        _id: '$album_name',
+                        album_sold: { $sum: '$album_sold' },
+                        totalStreamApple: { $sum: '$stream.apple' },
+                        totalStreamSpotify: { $sum: '$stream.spotify' },
+                        totalRevenueApple: { $sum: '$revenue.apple' },
+                        totalRevenueSpotify: { $sum: '$revenue.spotify' }
+                    }
+                }
+            ]);
+
+            const data = reportData.map(item => ({
+                album_name: item._id,
+                album_sold: item.album_sold,
+                streams: item.totalStreamApple + item.totalStreamSpotify,
+                total_revenue: item.totalRevenueApple + item.totalRevenueSpotify
+            }));
+            return res.json(data);
+        } else if (type === 'single') {
+            reportData = await SingleAnalytics.aggregate([
+                { $match: { email: artist.email } },
+                {
+                    $group: {
+                        _id: '$single_name',
+                        single_sold: { $sum: '$single_sold' },
+                        totalStreamApple: { $sum: '$stream.apple' },
+                        totalStreamSpotify: { $sum: '$stream.spotify' },
+                        totalRevenueApple: { $sum: '$revenue.apple' },
+                        totalRevenueSpotify: { $sum: '$revenue.spotify' }
+                    }
+                }
+            ]);
+
+            const data = reportData.map(item => ({
+                title: item._id,
+                songs_sold: item.single_sold,
+                streams: item.totalStreamApple + item.totalStreamSpotify,
+                total_revenue: item.totalRevenueApple + item.totalRevenueSpotify
+            }));
+            return res.json(data);
+        } else {
+            return res.status(400).json({ message: 'Invalid type' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Error generating report', error: error.message });
+    }
+});
+
+// Endpoint 5: Monthly report by artist name
+router.get('/monthlyReport/:artistName', async (req, res) => {
+    try {
+        const { artistName } = req.params;
+
+        // Find artist by name
+        const artist = await findArtistByName(artistName);
+        const monthlyReports = [];
+
+        for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+            const startOfMonth = moment().startOf('year').add(monthIndex, 'months').toDate();
+            const endOfMonth = moment(startOfMonth).endOf('month').toDate();
+
+            const albumMonthly = await AlbumAnalytics.aggregate([
+                {
+                    $match: {
+                        email: artist.email,
+                        created_at: { $gte: startOfMonth, $lte: endOfMonth }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$album_name',
+                        totalRevenueApple: { $sum: '$revenue.apple' },
+                        totalRevenueSpotify: { $sum: '$revenue.spotify' },
+                    }
+                }
+            ]);
+
+            const singleMonthly = await SingleAnalytics.aggregate([
+                {
+                    $match: {
+                        email: artist.email,
+                        created_at: { $gte: startOfMonth, $lte: endOfMonth }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$single_name',
+                        totalRevenueApple: { $sum: '$revenue.apple' },
+                        totalRevenueSpotify: { $sum: '$revenue.spotify' },
+                    }
+                }
+            ]);
+
+            const data = {
+                month: moment(startOfMonth).format('MMMM'),
+                album_revenue: albumMonthly.reduce((acc, item) => acc + item.totalRevenueApple + item.totalRevenueSpotify, 0),
+                single_revenue: singleMonthly.reduce((acc, item) => acc + item.totalRevenueApple + item.totalRevenueSpotify, 0)
+            };
+
+            monthlyReports.push(data);
+        }
+
+        res.status(200).send(monthlyReports);
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+});
+
 module.exports = router;
