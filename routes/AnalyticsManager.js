@@ -593,6 +593,7 @@ router.get('/userReport/:email', async (req, res) => {
         res.status(500).json({ message: 'Error generating report.', error: error.message });
     }
 });
+
 router.get('/analytics/revenue-monthly', async (req, res) => {
     try {
         const { type, year, artistName, song_title } = req.query; // Using artistName instead of email
