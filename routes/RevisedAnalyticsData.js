@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const AlbumAnalytics = require('../models/AnalyticsSchema');
 const SingleAnalytics = require('../models/AnalyticsSchema');
-const ArtistForRecordLabel = require('../models/ArtistForRecordLabel');
+const ArtistForRecordLabel = require('../models/RecordLabelManager');
 const Song = require('../models/Song');
 
 // Utility function to get data based on a range of months
