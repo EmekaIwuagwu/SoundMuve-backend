@@ -22,21 +22,19 @@ const analytics = require("./routes/Analytics");
 const analyticsRoutes = require("./routes/AnalyticsManager");
 const kycRoutes = require("./routes/kycRoutes");
 const search = require("./routes/searchRoutes");
-<<<<<<< HEAD
 const musicDist = require("./routes/MusicDistribution");
-=======
 const checkout = require("./routes/PayPerRelease");
->>>>>>> 52cca5722190588f04e5cbcdd916b2784cdabcb5
+
 
 app.use(cors())
 
 app.use(function (req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    next();
- });
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  next();
+});
 
 app.use(logger("dev"));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -62,25 +60,20 @@ connectDB();
 // Routes
 app.use("/api/auth", auth);
 app.use("/api/newsLetter", newsLetter);
-app.use("/api/Release",release);
-app.use("/api/wallet",transactions);
-app.use("/api/songs",songs);
-app.use("/api/payouts",payouts);
-app.use("/api/currency",currency);
-app.use("/api/recordLabel",recordLabel);
-app.use("/api/payoutDetails",payoutDetails);
-app.use("/api/transactionInit",initiateTransaction);
-app.use("/api/analytics",analytics);
-app.use("/api/analyticsManager",analyticsRoutes);
-app.use("/api/kyc",kycRoutes);
-app.use("/api/search",search);
-<<<<<<< HEAD
-app.use("/api/musicDist",musicDist);
-=======
-app.use("/api/checkout",checkout);
-
->>>>>>> 52cca5722190588f04e5cbcdd916b2784cdabcb5
-
+app.use("/api/Release", release);
+app.use("/api/wallet", transactions);
+app.use("/api/songs", songs);
+app.use("/api/payouts", payouts);
+app.use("/api/currency", currency);
+app.use("/api/recordLabel", recordLabel);
+app.use("/api/payoutDetails", payoutDetails);
+app.use("/api/transactionInit", initiateTransaction);
+app.use("/api/analytics", analytics);
+app.use("/api/analyticsManager", analyticsRoutes);
+app.use("/api/kyc", kycRoutes);
+app.use("/api/search", search);
+app.use("/api/musicDist", musicDist);
+app.use("/api/checkout", checkout);
 
 app.get("/", function (req, res) {
   res.json({ homeresponse: "Welcome :)" });
