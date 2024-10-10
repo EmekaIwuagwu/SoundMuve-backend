@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const AlbumAnalytics = require('../models/AlbumAnalytics');
-const SingleAnalytics = require('../models/SingleAnalytics');
+const AlbumAnalytics = require('../models/AnalyticsSchema');
+const SingleAnalytics = require('../models/AnalyticsSchema');
 const ArtistForRecordLabel = require('../models/ArtistForRecordLabel');
 const Song = require('../models/Song');
 
