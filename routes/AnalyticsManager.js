@@ -89,7 +89,6 @@ router.delete('/album-analytics/:id', async (req, res) => {
     }
 });
 
-// Repeat similar routes for SingleAnalytics, Store, and Location
 
 // Get Total Apple and Spotify Revenue by Month for a User
 router.get('/analytics/revenue-monthly', async (req, res) => {

@@ -24,6 +24,7 @@ const kycRoutes = require("./routes/kycRoutes");
 const search = require("./routes/searchRoutes");
 const musicDist = require("./routes/MusicDistribution");
 const checkout = require("./routes/PayPerRelease");
+const revisedAnalytics = require("./routes/RevisedAnalyticsData");
 
 
 app.use(cors())
@@ -74,6 +75,7 @@ app.use("/api/kyc", kycRoutes);
 app.use("/api/search", search);
 app.use("/api/musicDist", musicDist);
 app.use("/api/checkout", checkout);
+app.use("/api/revisedAnalytics",revisedAnalytics);
 
 app.get("/", function (req, res) {
   res.json({ homeresponse: "Welcome :)" });
