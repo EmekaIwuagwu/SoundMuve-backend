@@ -23,6 +23,15 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
+const validateToken = (req, res, next) => {
+    const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+    if (!token) {
+        return res.status(422).json({ message: "Please Provide Token!" });
+    }
+    // Token validation logic (e.g., JWT verification) can be added here.
+    next();
+};
+
 // Endpoint for uploading a promotion
 router.post('/promotions', upload.single('promopic'), async (req, res) => {
     try {
@@ -42,7 +51,7 @@ router.post('/promotions', upload.single('promopic'), async (req, res) => {
 });
 
 // Endpoint for getting all promotions
-router.get('/promotions', async (req, res) => {
+router.get('/promotions',validateToken, async (req, res) => {
     try {
         const promotions = await Promotions.find(); // Fetch all promotions
         res.status(200).json(promotions);
