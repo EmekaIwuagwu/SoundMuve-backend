@@ -25,6 +25,7 @@ const search = require("./routes/searchRoutes");
 const musicDist = require("./routes/MusicDistribution");
 const checkout = require("./routes/PayPerRelease");
 const revisedAnalytics = require("./routes/RevisedAnalyticsData");
+const promotions = require("./routes/promotions");
 
 
 app.use(cors())
@@ -76,6 +77,7 @@ app.use("/api/search", search);
 app.use("/api/musicDist", musicDist);
 app.use("/api/checkout", checkout);
 app.use("/api/revisedAnalytics",revisedAnalytics);
+app.use("/api/promotions",promotions);
 
 app.get("/", function (req, res) {
   res.json({ homeresponse: "Welcome :)" });
