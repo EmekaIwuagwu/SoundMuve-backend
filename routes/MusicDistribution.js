@@ -122,11 +122,18 @@ router.delete('/delete-profile', checkToken, async (req, res) => {
             return res.status(404).json({ message: "Profile not found." });
         }
 
-        await profile.remove();
+        // Use deleteOne or findByIdAndDelete instead of remove
+        if (_id) {
+            await MusicDistribution.findByIdAndDelete(_id);
+        } else if (email) {
+            await MusicDistribution.deleteOne({ email });
+        }
+
         res.status(200).json({ message: "Profile deleted successfully." });
     } catch (err) {
         res.status(500).json({ message: "Failed to delete profile.", error: err.message });
     }
 });
+
 
 module.exports = router;
