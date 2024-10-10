@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     max: 255,
   },
+  teamType: {
+    type: String, // Add the teamType field
+    max: 255,
+  },
   balance: {
     type: mongoose.SchemaTypes.Number,
     required: true,
@@ -51,10 +55,14 @@ const userSchema = new mongoose.Schema({
       answer: { type: String },
     },
   ],
+  isKycSubmitted: {
+    type: Boolean,
+    default: false,
+  },
   created_at: {
     type: Date,
     default: Date.now,
   },
 });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model("User", userSchema);

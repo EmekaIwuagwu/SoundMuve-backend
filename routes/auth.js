@@ -67,6 +67,15 @@ const SendOTP = async (email, otp) => {
   console.log('OTP sent:', otp);
 };
 
+const validateToken = (req, res, next) => {
+  const token = req.headers.authorization && req.headers.authorization.split(" ")[1];
+  if (!token) {
+      return res.status(422).json({ message: "Please Provide Token!" });
+  }
+  // Token validation logic (e.g., JWT verification) can be added here.
+  next();
+};
+
 const SendLoginNotification = async (email) => {
   let transporter = nodemailer.createTransport({
     host: process.env.SMTP_SERVER,
@@ -488,6 +497,38 @@ router.post("/forgot-password", async (req, res) => {
 
   } catch (error) {
     res.status(404).json({ message: error.message });
+  }
+});
+
+router.get('/check-kyc/:email', validateToken, async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    // If no user is found
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check KYC submission status
+    if (user.isKycSubmitted) {
+      return res.status(200).json({ 
+        message: 'KYC submitted', 
+        email: user.email,
+        kycStatus: true 
+      });
+    } else {
+      return res.status(200).json({ 
+        message: 'KYC not submitted', 
+        email: user.email,
+        kycStatus: false 
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -22,7 +22,11 @@ const analytics = require("./routes/Analytics");
 const analyticsRoutes = require("./routes/AnalyticsManager");
 const kycRoutes = require("./routes/kycRoutes");
 const search = require("./routes/searchRoutes");
+<<<<<<< HEAD
 const musicDist = require("./routes/MusicDistribution");
+=======
+const checkout = require("./routes/PayPerRelease");
+>>>>>>> 52cca5722190588f04e5cbcdd916b2784cdabcb5
 
 app.use(cors())
 
@@ -70,7 +74,12 @@ app.use("/api/analytics",analytics);
 app.use("/api/analyticsManager",analyticsRoutes);
 app.use("/api/kyc",kycRoutes);
 app.use("/api/search",search);
+<<<<<<< HEAD
 app.use("/api/musicDist",musicDist);
+=======
+app.use("/api/checkout",checkout);
+
+>>>>>>> 52cca5722190588f04e5cbcdd916b2784cdabcb5
 
 
 app.get("/", function (req, res) {

@@ -64,30 +64,41 @@ router.post('/kyc/select-questions', validateToken, async (req, res) => {
 router.post('/kyc/submit-answers', validateToken, async (req, res) => {
   const { email, answers } = req.body;
 
+  // Validate request body
   if (!email || !answers || answers.length !== 3) {
     return res.status(400).send({ message: 'Email and exactly 3 answers are required' });
   }
 
   try {
+    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).send({ message: 'User not found' });
     }
 
+    // Check if security questions are available
     if (!user.securityQuestions || user.securityQuestions.length !== 3) {
       return res.status(400).send({ message: 'Security questions not found or incomplete' });
     }
 
+    // Save the provided answers to the user's security questions
     user.securityQuestions.forEach((questionObj, index) => {
-      questionObj.answer = answers[index];
+      if (questionObj) {
+        questionObj.answer = answers[index]; // Update the answer for each question
+      }
     });
 
+    // Update KYC submission status
+    user.isKycSubmitted = true;  // Set KYC status to true
+
+    // Save the user's updated security questions and KYC status
     await user.save();
-    res.status(200).send({ message: 'Security answers saved successfully' });
+    res.status(200).send({ message: 'Security answers submitted successfully, KYC status updated' });
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
 });
+
 
 // Step 4: Edit Security Questions
 router.put('/kyc/edit-questions', validateToken, async (req, res) => {
