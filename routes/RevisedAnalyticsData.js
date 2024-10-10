@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const AlbumAnalytics = require('../models/AnalyticsSchema');
-const SingleAnalytics = require('../models/AnalyticsSchema');
+const { AlbumAnalytics, SingleAnalytics } = require('../models/AnalyticsSchema'); // Destructure the models here
 const ArtistForRecordLabel = require('../models/RecordLabelManager');
 const Song = require('../models/Song');
 
