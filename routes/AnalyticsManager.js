@@ -101,7 +101,14 @@ router.get('/artist-revenue-monthly', async (req, res) => {
     }
 
     try {
-        // Aggregation pipeline to group by month and calculate total revenues
+        // Step 1: Check if data exists for the provided email and song_title
+        const existingData = await AlbumAnalytics.findOne({ email, song_title });
+
+        if (!existingData) {
+            return res.status(404).json({ message: 'No data found for the provided email and song_title' });
+        }
+
+        // Step 2: Perform aggregation pipeline to get monthly data
         const results = await AlbumAnalytics.aggregate([
             {
                 $match: {
@@ -119,7 +126,11 @@ router.get('/artist-revenue-monthly', async (req, res) => {
                         $sum: { $add: ["$revenue.apple", "$revenue.spotify"] }
                     },
                     totalAppleRevenue: { $sum: "$revenue.apple" },
-                    totalSpotifyRevenue: { $sum: "$revenue.spotify" }
+                    totalSpotifyRevenue: { $sum: "$revenue.spotify" },
+                    totalAppleStreams: { $sum: "$streams.apple" },
+                    totalSpotifyStreams: { $sum: "$streams.spotify" },
+                    totalAppleStreamTime: { $sum: "$stream_time.apple" },
+                    totalSpotifyStreamTime: { $sum: "$stream_time.spotify" }
                 }
             },
             {
@@ -127,33 +138,44 @@ router.get('/artist-revenue-monthly', async (req, res) => {
             }
         ]);
 
-        // Initialize an array for 12 months with zero values
+        // Step 3: Initialize an array for the 12 months with zero values
         const monthlyData = Array.from({ length: 12 }, (_, index) => ({
             month: new Date(0, index).toLocaleString('default', { month: 'short' }),
             totalRevenue: 0,
             totalAppleRevenue: 0,
             totalSpotifyRevenue: 0,
-            percentageValue: "0.00"
+            totalAppleStreams: 0,
+            totalSpotifyStreams: 0,
+            totalAppleStreamTime: 0,
+            totalSpotifyStreamTime: 0,
+            percentageRevenueFromApple: "0.00"
         }));
 
-        // Populate the monthly data with results from aggregation
-        results.forEach(({ _id, totalRevenue, totalAppleRevenue, totalSpotifyRevenue }) => {
+        // Step 4: Populate the monthly data with results from the aggregation
+        results.forEach(({ _id, totalRevenue, totalAppleRevenue, totalSpotifyRevenue, totalAppleStreams, totalSpotifyStreams, totalAppleStreamTime, totalSpotifyStreamTime }) => {
             const monthIndex = _id.month - 1; // Convert month (1-12) to index (0-11)
             monthlyData[monthIndex] = {
                 month: monthlyData[monthIndex].month,
                 totalRevenue: totalRevenue.toFixed(2),
                 totalAppleRevenue: totalAppleRevenue.toFixed(2),
                 totalSpotifyRevenue: totalSpotifyRevenue.toFixed(2),
-                percentageValue: totalRevenue > 0 ? ((totalAppleRevenue / totalRevenue) * 100).toFixed(2) : "0.00"
+                totalAppleStreams: totalAppleStreams,
+                totalSpotifyStreams: totalSpotifyStreams,
+                totalAppleStreamTime: totalAppleStreamTime,
+                totalSpotifyStreamTime: totalSpotifyStreamTime,
+                percentageRevenueFromApple: totalRevenue > 0 ? ((totalAppleRevenue / totalRevenue) * 100).toFixed(2) : "0.00"
             };
         });
 
+        // Step 5: Return the final data
         res.json(monthlyData);
+
     } catch (error) {
         console.error('Error fetching records:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
