@@ -103,14 +103,14 @@ router.get('/revenueByType', async (req, res) => {
 
     // Select the correct model based on the 'type' parameter
     let analyticsModel;
-    let matchCriteria = { type, email, album_name,year: parseInt(year) };
+    let matchCriteria = { email, year: parseInt(year) };
 
     if (type === 'single') {
         analyticsModel = SingleAnalytics;
-        matchCriteria.single_name = single_name;
+        matchCriteria.single_name = single_name; // Add single_name to match criteria
     } else if (type === 'album') {
         analyticsModel = AlbumAnalytics;
-        matchCriteria.album_name = album_name;
+        matchCriteria.album_name = album_name; // Add album_name to match criteria
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
     }
@@ -126,7 +126,10 @@ router.get('/revenueByType', async (req, res) => {
         const results = await analyticsModel.aggregate([
             {
                 $match: {
-                    ...matchCriteria
+                    email: matchCriteria.email,
+                    year: matchCriteria.year,
+                    ...(type === 'album' && { album_name: matchCriteria.album_name }),
+                    ...(type === 'single' && { single_name: matchCriteria.single_name })
                 }
             },
             {
@@ -186,6 +189,7 @@ router.get('/revenueByType', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 
 // Get Total Apple and Spotify Revenue by Year
