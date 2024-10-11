@@ -107,43 +107,42 @@ router.get('/artist-revenue-monthly', async (req, res) => {
             email: email
         });
 
-        // Initialize data for all 12 months
-        const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-            month: i + 1,
-            totalRevenue: 0,
-            totalAppleRevenue: 0,
-            totalSpotifyRevenue: 0,
-        }));
+        // Initialize a dictionary to store the total revenues for each month
+        const monthlyData = {
+            Jan: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Feb: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Mar: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Apr: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            May: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Jun: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Jul: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Aug: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Sep: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Oct: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Nov: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+            Dec: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
+        };
 
         // Process fetched data to populate monthly data
         data.forEach(record => {
-            const monthIndex = new Date(record.created_at).getMonth(); // Get month (0-11)
-            monthlyData[monthIndex].totalRevenue += (record.revenue.apple || 0) + (record.revenue.spotify || 0);
-            monthlyData[monthIndex].totalAppleRevenue += record.revenue.apple || 0;
-            monthlyData[monthIndex].totalSpotifyRevenue += record.revenue.spotify || 0;
+            const month = new Date(record.created_at).toLocaleString('default', { month: 'long' }).slice(0, 3); // Get month abbreviation (e.g., "Jan")
+            if (monthlyData[month]) {
+                monthlyData[month].totalRevenue += (record.revenue.apple || 0) + (record.revenue.spotify || 0);
+                monthlyData[month].totalAppleRevenue += record.revenue.apple || 0;
+                monthlyData[month].totalSpotifyRevenue += record.revenue.spotify || 0;
+            }
         });
 
-        // Month names for the formatted output
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-        // Prepare the final formatted result
-        const formattedResult = monthlyData.map((data, index) => {
-            const totalRevenue = data.totalRevenue.toFixed(2);
-            const totalAppleRevenue = data.totalAppleRevenue.toFixed(2);
-            const totalSpotifyRevenue = data.totalSpotifyRevenue.toFixed(2);
-            const percentageValue = (totalRevenue > 0) ? ((data.totalAppleRevenue / totalRevenue) * 100).toFixed(2) : "0.00";
-
-            return {
-                month: months[index],
-                totalRevenue: totalRevenue,
-                totalAppleRevenue: totalAppleRevenue,
-                totalSpotifyRevenue: totalSpotifyRevenue,
-                percentageValue: percentageValue
-            };
-        });
-
-        // Filter out months with zero revenue
-        const resultWithRevenue = formattedResult.filter(month => month.totalRevenue > 0);
+        // Prepare the final formatted result, only including months with revenue
+        const resultWithRevenue = Object.entries(monthlyData)
+            .filter(([month, revenue]) => revenue.totalRevenue > 0) // Filter out months with zero revenue
+            .map(([month, revenue]) => ({
+                month,
+                totalRevenue: revenue.totalRevenue.toFixed(2),
+                totalAppleRevenue: revenue.totalAppleRevenue.toFixed(2),
+                totalSpotifyRevenue: revenue.totalSpotifyRevenue.toFixed(2),
+                percentageValue: revenue.totalRevenue > 0 ? ((revenue.totalAppleRevenue / revenue.totalRevenue) * 100).toFixed(2) : "0.00"
+            }));
 
         res.json(resultWithRevenue);
     } catch (error) {
@@ -151,7 +150,6 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
