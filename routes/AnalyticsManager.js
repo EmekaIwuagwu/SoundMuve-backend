@@ -90,10 +90,10 @@ router.delete('/album-analytics/:id', async (req, res) => {
 });
 
 router.get('/revenueByType', async (req, res) => {
-    const { type, email, artistName, year, single_name, album_name } = req.query;
+    const { type, email, year, single_name, album_name } = req.query;
 
     // Log the incoming query parameters
-    console.log('Query Parameters:', { type, email, artistName, year, single_name, album_name });
+    console.log('Query Parameters:', { type, email, year, single_name, album_name });
 
     // Validate that all necessary query parameters are provided
     if (!type || !email || !year || 
