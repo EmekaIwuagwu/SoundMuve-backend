@@ -840,5 +840,147 @@ router.get('/artistmonthlyReport/:artistName', async (req, res) => {
     }
 });
 
+
+//Added Corrected endpoints 
+
+// Utility function to aggregate monthly analytics
+async function getMonthlyAnalytics(schema, email) {
+    const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    const analytics = await schema.aggregate([
+        { $match: { email } },  // Filter by user email
+        {
+            $group: {
+                _id: { $month: "$created_at" },
+                totalStreams: { $sum: "$streams" },
+                totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
+                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } }
+            }
+        }
+    ]);
+
+    // Map the month index to month names
+    return analytics.map(a => ({
+        month: months[a._id - 1],  // Adjust index to month names
+        totalStreams: a.totalStreams,
+        totalRevenue: a.totalRevenue,
+        totalSold: a.totalSold
+    }));
+}
+
+// Utility function to aggregate yearly analytics
+async function getYearlyAnalytics(schema, email) {
+    const analytics = await schema.aggregate([
+        { $match: { email } },  // Filter by user email
+        {
+            $group: {
+                _id: null,
+                totalStreams: { $sum: "$streams" },
+                totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
+                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } }
+            }
+        }
+    ]);
+
+    return analytics.length > 0 ? analytics[0] : { totalStreams: 0, totalRevenue: 0, totalSold: 0 };
+}
+
+// Endpoint 1: Get Monthly Analytics for Individual Users
+router.get('/user/monthly/:email', async (req, res) => {
+    try {
+        const email = req.params.email;
+
+        const albumData = await getMonthlyAnalytics(AlbumAnalytics, email);
+        const singleData = await getMonthlyAnalytics(SingleAnalytics, email);
+        const storeData = await getMonthlyAnalytics(Store, email);
+        const locationData = await getMonthlyAnalytics(Location, email);
+
+        res.status(200).json({
+            albums: albumData,
+            singles: singleData,
+            stores: storeData,
+            locations: locationData
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Endpoint 2: Get Yearly Analytics for Individual Users
+router.get('/user/yearly/:email', async (req, res) => {
+    try {
+        const email = req.params.email;
+
+        const albumData = await getYearlyAnalytics(AlbumAnalytics, email);
+        const singleData = await getYearlyAnalytics(SingleAnalytics, email);
+        const storeData = await getYearlyAnalytics(Store, email);
+        const locationData = await getYearlyAnalytics(Location, email);
+
+        res.status(200).json({
+            albums: albumData,
+            singles: singleData,
+            stores: storeData,
+            locations: locationData
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Endpoint 3: Get Monthly Analytics for Artists in a Record Label
+router.get('/artist/record-label/monthly/:email/:artistName', async (req, res) => {
+    try {
+        const { email, artistName } = req.params;
+
+        const artist = await ArtistForRecordLabel.findOne({ email, artistName });
+        if (!artist) {
+            return res.status(404).json({ message: "Artist not found in this record label" });
+        }
+
+        const albumData = await getMonthlyAnalytics(AlbumAnalytics, email);
+        const singleData = await getMonthlyAnalytics(SingleAnalytics, email);
+        const storeData = await getMonthlyAnalytics(Store, email);
+        const locationData = await getMonthlyAnalytics(Location, email);
+
+        res.status(200).json({
+            albums: albumData,
+            singles: singleData,
+            stores: storeData,
+            locations: locationData
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Endpoint 4: Get Yearly Analytics for Artists in a Record Label
+router.get('/artist/record-label/yearly/:email/:artistName', async (req, res) => {
+    try {
+        const { email, artistName } = req.params;
+
+        const artist = await ArtistForRecordLabel.findOne({ email, artistName });
+        if (!artist) {
+            return res.status(404).json({ message: "Artist not found in this record label" });
+        }
+
+        const albumData = await getYearlyAnalytics(AlbumAnalytics, email);
+        const singleData = await getYearlyAnalytics(SingleAnalytics, email);
+        const storeData = await getYearlyAnalytics(Store, email);
+        const locationData = await getYearlyAnalytics(Location, email);
+
+        res.status(200).json({
+            albums: albumData,
+            singles: singleData,
+            stores: storeData,
+            locations: locationData
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Helper function to find artist by name
 module.exports = router;

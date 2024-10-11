@@ -27,6 +27,7 @@ const AlbumAnalytics = mongoose.model('AlbumAnalytics', albumAnalyticsSchema);
 const singleAnalyticsSchema = new mongoose.Schema({
     email: { type: String, required: true },
     single_name: { type: String, required: true },
+    song_title: { type: String, required: true },
     singles_id: { type: String, required: true },
     single_sold: { type: Number, required: true },
     stream: {
@@ -49,6 +50,8 @@ const SingleAnalytics = mongoose.model('SingleAnalytics', singleAnalyticsSchema)
 // Schema for Store Analytics
 const storeSchema = new mongoose.Schema({
     store_name: { type: String, required: true },
+    song_title: { type: String, required: true },
+    album_title: { type: String, required: true },
     album_sold: { type: Number, required: true },
     song_sold: { type: Number, required: true },
     streams: { type: Number, required: true },
@@ -62,6 +65,8 @@ const Store = mongoose.model('Store', storeSchema);
 const locationSchema = new mongoose.Schema({
     email: { type: String, required: true },
     location: { type: String, required: true },
+    song_title: { type: String, required: true },
+    album_title: { type: String, required: true },
     album_sold: { type: String, required: true },
     single_sold: { type: Number, required: true },
     streams: { type: Number, required: true },
