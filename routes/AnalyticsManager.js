@@ -103,7 +103,7 @@ router.get('/revenueByType', async (req, res) => {
 
     // Select the correct model based on the 'type' parameter
     let analyticsModel;
-    let matchCriteria = { email, artistName, year: parseInt(year) };
+    let matchCriteria = { email, year: parseInt(year) };
 
     if (type === 'single') {
         analyticsModel = SingleAnalytics;
