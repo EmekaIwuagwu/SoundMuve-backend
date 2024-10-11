@@ -97,6 +97,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
     // Validate query parameters
     if (!email || !song_title || !type) {
+        console.log('Validation failed: Missing parameters');
         return res.status(400).json({ message: 'Email, song_title, and type are required' });
     }
 
@@ -109,6 +110,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         } else if (type === 'single') {
             analyticsModel = SingleAnalytics;
         } else {
+            console.log('Invalid type:', type);
             return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
         }
 
@@ -116,6 +118,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         const existingData = await analyticsModel.findOne({ email, song_title });
 
         if (!existingData) {
+            console.log('No data found for:', { email, song_title });
             return res.status(404).json({ message: 'No data found for the provided email and song_title' });
         }
 
@@ -148,6 +151,8 @@ router.get('/artist-revenue-monthly', async (req, res) => {
                 $sort: { "_id.year": 1, "_id.month": 1 } // Sort by year and month
             }
         ]);
+
+        console.log('Aggregation Results:', results);
 
         // Step 3: Initialize an array for the 12 months with zero values
         const monthlyData = Array.from({ length: 12 }, (_, index) => ({
@@ -186,6 +191,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 
 // Get Total Apple and Spotify Revenue by Year
