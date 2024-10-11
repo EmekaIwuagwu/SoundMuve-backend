@@ -107,6 +107,9 @@ router.get('/artist-revenue-monthly', async (req, res) => {
             email: email
         });
 
+        // Log the fetched data for debugging
+        console.log('Fetched Data:', data);
+
         // Initialize a dictionary to store the total revenues for each month
         const monthlyData = {
             Jan: { totalRevenue: 0, totalAppleRevenue: 0, totalSpotifyRevenue: 0 },
@@ -125,8 +128,10 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Process fetched data to populate monthly data
         data.forEach(record => {
-            const createdAt = new Date(record.created_at); // Extract the date
-            const month = createdAt.toLocaleString('default', { month: 'short' }); // Get month abbreviation (e.g., "Jan")
+            const createdAt = new Date(record.created_at.$date); // Adjusted for the MongoDB date format
+            const month = createdAt.toLocaleString('default', { month: 'short' }); // Get month abbreviation (e.g., "Jan", "Oct")
+
+            console.log(`Processing record for month: ${month}`); // Log the month being processed
 
             // Only proceed if the month is valid
             if (monthlyData[month]) {
@@ -153,6 +158,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 
 // Get Total Apple and Spotify Revenue by Year
