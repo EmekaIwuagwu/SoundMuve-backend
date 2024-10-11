@@ -125,7 +125,10 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Process fetched data to populate monthly data
         data.forEach(record => {
-            const month = new Date(record.created_at).toLocaleString('default', { month: 'long' }).slice(0, 3); // Get month abbreviation (e.g., "Jan")
+            const createdAt = new Date(record.created_at); // Extract the date
+            const month = createdAt.toLocaleString('default', { month: 'short' }); // Get month abbreviation (e.g., "Jan")
+
+            // Only proceed if the month is valid
             if (monthlyData[month]) {
                 monthlyData[month].totalRevenue += (record.revenue.apple || 0) + (record.revenue.spotify || 0);
                 monthlyData[month].totalAppleRevenue += record.revenue.apple || 0;
@@ -150,6 +153,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
