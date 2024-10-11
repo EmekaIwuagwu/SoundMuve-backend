@@ -134,10 +134,10 @@ router.get('/revenueByType', async (req, res) => {
                     $match: {
                         email: matchCriteria.email,
                         single_name: matchCriteria.single_name,
-                        created_at: {
+                        /*created_at: {
                             $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
                             $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
-                        }
+                        }*/
                     }
                 },
                 {
@@ -165,10 +165,11 @@ router.get('/revenueByType', async (req, res) => {
                     $match: {
                         email: matchCriteria.email,
                         album_name: matchCriteria.album_name,
-                        created_at: {
+                        /*created_at: {
                             $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
                             $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
                         }
+                        */
                     }
                 },
                 {
