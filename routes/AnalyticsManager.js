@@ -134,19 +134,22 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Prepare the final formatted result
         const formattedResult = monthlyData.map((data, index) => {
-            const totalRevenue = data.totalRevenue.toFixed(2);
-            const totalAppleRevenue = data.totalAppleRevenue.toFixed(2);
-            const totalSpotifyRevenue = data.totalSpotifyRevenue.toFixed(2);
-            const percentageValue = (totalRevenue > 0) ? ((data.totalAppleRevenue / totalRevenue) * 100).toFixed(2) : "0.00";
+            if (data.totalRevenue > 0) {
+                const totalRevenue = data.totalRevenue.toFixed(2);
+                const totalAppleRevenue = data.totalAppleRevenue.toFixed(2);
+                const totalSpotifyRevenue = data.totalSpotifyRevenue.toFixed(2);
+                const percentageValue = ((data.totalAppleRevenue / data.totalRevenue) * 100).toFixed(2);
 
-            return {
-                month: months[index],
-                totalRevenue: totalRevenue,
-                totalAppleRevenue: totalAppleRevenue,
-                totalSpotifyRevenue: totalSpotifyRevenue,
-                percentageValue: percentageValue
-            };
-        });
+                return {
+                    month: months[index],
+                    totalRevenue: totalRevenue,
+                    totalAppleRevenue: totalAppleRevenue,
+                    totalSpotifyRevenue: totalSpotifyRevenue,
+                    percentageValue: percentageValue
+                };
+            }
+            return null;
+        }).filter(data => data !== null); // Filter out months with no data
 
         res.json(formattedResult);
     } catch (error) {
