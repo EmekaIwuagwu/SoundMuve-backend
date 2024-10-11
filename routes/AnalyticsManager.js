@@ -96,19 +96,21 @@ router.get('/revenueByType', async (req, res) => {
     console.log('Query Parameters:', { type, email, artistName, year, single_name, album_name });
 
     // Validate that all necessary query parameters are provided
-    if (!type || !email || !artistName || !year || (type === 'single' && !single_name) || (type === 'album' && !album_name)) {
+    if (!type || !email || !artistName || !year || 
+        (type === 'single' && !single_name) || (type === 'album' && !album_name)) {
         return res.status(400).json({ message: 'Missing required parameters' });
     }
 
     // Select the correct model based on the 'type' parameter
     let analyticsModel;
-    let matchCriteria;
+    let matchCriteria = { email, artistName, year: parseInt(year) };
+
     if (type === 'single') {
         analyticsModel = SingleAnalytics;
-        matchCriteria = { email, artistName, year: parseInt(year), single_name };
+        matchCriteria.single_name = single_name;
     } else if (type === 'album') {
         analyticsModel = AlbumAnalytics;
-        matchCriteria = { email, artistName, year: parseInt(year), album_name };
+        matchCriteria.album_name = album_name;
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
     }
@@ -184,6 +186,7 @@ router.get('/revenueByType', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
