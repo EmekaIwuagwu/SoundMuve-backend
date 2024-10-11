@@ -115,6 +115,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         if (records.length === 0) {
             console.log('No records found for the specified parameters');
+            return res.json(monthlyData); // Return monthlyData with zeros
         } else {
             console.log(`Found ${records.length} records`);
         }
@@ -129,6 +130,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Populate the monthly data with fetched records
         records.forEach(record => {
+            console.log('Record:', record); // Log each record
             const monthIndex = new Date(record.created_at).getMonth(); // Get month index (0 for Jan, 11 for Dec)
             monthlyData[monthIndex].totalRevenue += record.revenue.apple + record.revenue.spotify;
             monthlyData[monthIndex].totalAppleRevenue += record.revenue.apple;
