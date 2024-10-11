@@ -91,25 +91,35 @@ router.delete('/album-analytics/:id', async (req, res) => {
 
 
 router.get('/artist-revenue-monthly', async (req, res) => {
-    const { email, song_title } = req.query;
+    const { email, song_title, type } = req.query;
 
-    console.log('Query Parameters:', { email, song_title });
+    console.log('Query Parameters:', { email, song_title, type });
 
     // Validate query parameters
-    if (!email || !song_title) {
-        return res.status(400).json({ message: 'Email and song_title are required' });
+    if (!email || !song_title || !type) {
+        return res.status(400).json({ message: 'Email, song_title, and type are required' });
+    }
+
+    // Select the correct model based on the 'type' parameter
+    let analyticsModel;
+    if (type === 'album') {
+        analyticsModel = AlbumAnalytics;
+    } else if (type === 'single') {
+        analyticsModel = SingleAnalytics;
+    } else {
+        return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
     }
 
     try {
         // Step 1: Check if data exists for the provided email and song_title
-        const existingData = await AlbumAnalytics.findOne({ email, song_title });
+        const existingData = await analyticsModel.findOne({ email, song_title });
 
         if (!existingData) {
             return res.status(404).json({ message: 'No data found for the provided email and song_title' });
         }
 
         // Step 2: Perform aggregation pipeline to get monthly data
-        const results = await AlbumAnalytics.aggregate([
+        const results = await analyticsModel.aggregate([
             {
                 $match: {
                     email: email,
@@ -127,10 +137,10 @@ router.get('/artist-revenue-monthly', async (req, res) => {
                     },
                     totalAppleRevenue: { $sum: "$revenue.apple" },
                     totalSpotifyRevenue: { $sum: "$revenue.spotify" },
-                    totalAppleStreams: { $sum: "$streams.apple" },
-                    totalSpotifyStreams: { $sum: "$streams.spotify" },
-                    totalAppleStreamTime: { $sum: "$stream_time.apple" },
-                    totalSpotifyStreamTime: { $sum: "$stream_time.spotify" }
+                    totalAppleStreams: { $sum: "$stream.apple" },
+                    totalSpotifyStreams: { $sum: "$stream.spotify" },
+                    totalAppleStreamTime: { $sum: "$streamTime.apple" },
+                    totalSpotifyStreamTime: { $sum: "$streamTime.spotify" }
                 }
             },
             {
