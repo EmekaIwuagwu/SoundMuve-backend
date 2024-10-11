@@ -101,7 +101,11 @@ router.get('/artist-revenue-monthly', async (req, res) => {
     }
 
     try {
-        // Fetch data directly without aggregation
+        // Fetch all records for testing
+        const allRecords = await AlbumAnalytics.find({});
+        console.log('All Records:', allRecords); // Log all records
+
+        // Fetch filtered records
         const records = await AlbumAnalytics.find({
             artistName: artistName,
             song_title: song_title,
@@ -112,13 +116,6 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Log fetched records
         console.log('Fetched Records:', records);
-
-        if (records.length === 0) {
-            console.log('No records found for the specified parameters');
-            return res.json(monthlyData); // Return monthlyData with zeros
-        } else {
-            console.log(`Found ${records.length} records`);
-        }
 
         // Create an object to store monthly data
         const monthlyData = Array.from({ length: 12 }, (_, i) => ({
@@ -157,7 +154,6 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
