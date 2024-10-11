@@ -156,6 +156,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
     }
 });
 
+
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
     try {
