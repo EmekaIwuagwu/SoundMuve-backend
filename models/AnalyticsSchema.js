@@ -29,7 +29,6 @@ const AlbumAnalytics = mongoose.model('AlbumAnalytics', albumAnalyticsSchema);
 const singleAnalyticsSchema = new mongoose.Schema({
     email: { type: String, required: true },
     single_name: { type: String, required: true },
-    song_title: { type: String, required: true },
     artistName: { type: String, required: true },
     singles_id: { type: String, required: true },
     single_sold: { type: Number, required: true },
