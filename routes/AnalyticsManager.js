@@ -89,41 +89,42 @@ router.delete('/album-analytics/:id', async (req, res) => {
     }
 });
 
+router.get('/revenueByType', async (req, res) => {
+    const { type, email, artistName, year, single_name, album_name } = req.query;
 
-router.get('/artist-revenue-monthly', async (req, res) => {
-    const { email, song_title, type } = req.query;
+    // Log the incoming query parameters
+    console.log('Query Parameters:', { type, email, artistName, year, single_name, album_name });
 
-    console.log('Query Parameters:', { email, song_title, type });
-
-    // Validate query parameters
-    if (!email || !song_title || !type) {
-        return res.status(400).json({ message: 'Email, song_title, and type are required' });
+    // Validate that all necessary query parameters are provided
+    if (!type || !email || !artistName || !year || (type === 'single' && !single_name) || (type === 'album' && !album_name)) {
+        return res.status(400).json({ message: 'Missing required parameters' });
     }
 
     // Select the correct model based on the 'type' parameter
     let analyticsModel;
-    if (type === 'album') {
-        analyticsModel = AlbumAnalytics;
-    } else if (type === 'single') {
+    let matchCriteria;
+    if (type === 'single') {
         analyticsModel = SingleAnalytics;
+        matchCriteria = { email, artistName, year: parseInt(year), single_name };
+    } else if (type === 'album') {
+        analyticsModel = AlbumAnalytics;
+        matchCriteria = { email, artistName, year: parseInt(year), album_name };
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
     }
 
     try {
-        // Step 1: Check if data exists for the provided email and song_title
-        const existingData = await analyticsModel.findOne({ email, song_title });
-
+        // Step 1: Check if data exists for the provided parameters
+        const existingData = await analyticsModel.findOne(matchCriteria);
         if (!existingData) {
-            return res.status(404).json({ message: 'No data found for the provided email and song_title' });
+            return res.status(404).json({ message: 'No data found for the provided parameters' });
         }
 
-        // Step 2: Perform aggregation pipeline to get monthly data
+        // Step 2: Perform the aggregation pipeline to get monthly data for the specified year
         const results = await analyticsModel.aggregate([
             {
                 $match: {
-                    email: email,
-                    song_title: song_title
+                    ...matchCriteria
                 }
             },
             {
@@ -132,9 +133,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
                         year: { $year: "$created_at" },
                         month: { $month: "$created_at" }
                     },
-                    totalRevenue: {
-                        $sum: { $add: ["$revenue.apple", "$revenue.spotify"] }
-                    },
+                    totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
                     totalAppleRevenue: { $sum: "$revenue.apple" },
                     totalSpotifyRevenue: { $sum: "$revenue.spotify" },
                     totalAppleStreams: { $sum: "$stream.apple" },
@@ -144,7 +143,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
                 }
             },
             {
-                $sort: { "_id.year": 1, "_id.month": 1 } // Sort by year and month
+                $sort: { "_id.year": 1, "_id.month": 1 }
             }
         ]);
 
@@ -185,7 +184,6 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
