@@ -94,6 +94,7 @@ router.get('/revenueByType', async (req, res) => {
 
     console.log('Query Parameters:', { type, email, year, single_name, album_name });
 
+    // Check for required parameters
     if (!type || !email || !year || 
         (type === 'single' && !single_name) || (type === 'album' && !album_name)) {
         return res.status(400).json({ message: 'Missing required parameters' });
@@ -124,38 +125,75 @@ router.get('/revenueByType', async (req, res) => {
             return res.status(404).json({ message: 'No data found for the provided parameters' });
         }
 
-        // Perform the aggregation to get monthly data for the specified year
-        const results = await analyticsModel.aggregate([
-            {
-                $match: {
-                    email: matchCriteria.email,
-                    single_name: matchCriteria.single_name, // Ensure correct match
-                    /*created_at: {
-                        $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
-                        $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
-                    }*/
-                }
-            },
-            {
-                $group: {
-                    _id: {
-                        year: { $year: "$created_at" },
-                        month: { $month: "$created_at" }
-                    },
-                    totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
-                    totalAppleRevenue: { $sum: "$revenue.apple" },
-                    totalSpotifyRevenue: { $sum: "$revenue.spotify" },
-                    totalAppleStreams: { $sum: "$stream.apple" },
-                    totalSpotifyStreams: { $sum: "$stream.spotify" },
-                    totalAppleStreamTime: { $sum: "$streamTime.apple" },
-                    totalSpotifyStreamTime: { $sum: "$streamTime.spotify" }
-                }
-            },
-            {
-                $sort: { "_id.year": 1, "_id.month": 1 }
-            }
-        ]);
+        // Prepare aggregation pipeline based on the type
+        let aggregationPipeline;
 
+        if (type === 'single') {
+            aggregationPipeline = [
+                {
+                    $match: {
+                        email: matchCriteria.email,
+                        single_name: matchCriteria.single_name,
+                        created_at: {
+                            $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
+                            $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: "$created_at" },
+                            month: { $month: "$created_at" }
+                        },
+                        totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
+                        totalAppleRevenue: { $sum: "$revenue.apple" },
+                        totalSpotifyRevenue: { $sum: "$revenue.spotify" },
+                        totalAppleStreams: { $sum: "$stream.apple" },
+                        totalSpotifyStreams: { $sum: "$stream.spotify" },
+                        totalAppleStreamTime: { $sum: "$streamTime.apple" },
+                        totalSpotifyStreamTime: { $sum: "$streamTime.spotify" }
+                    }
+                },
+                {
+                    $sort: { "_id.year": 1, "_id.month": 1 }
+                }
+            ];
+        } else if (type === 'album') {
+            aggregationPipeline = [
+                {
+                    $match: {
+                        email: matchCriteria.email,
+                        album_name: matchCriteria.album_name,
+                        created_at: {
+                            $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
+                            $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: "$created_at" },
+                            month: { $month: "$created_at" }
+                        },
+                        totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
+                        totalAppleRevenue: { $sum: "$revenue.apple" },
+                        totalSpotifyRevenue: { $sum: "$revenue.spotify" },
+                        totalAppleStreams: { $sum: "$stream.apple" },
+                        totalSpotifyStreams: { $sum: "$stream.spotify" },
+                        totalAppleStreamTime: { $sum: "$streamTime.apple" },
+                        totalSpotifyStreamTime: { $sum: "$streamTime.spotify" }
+                    }
+                },
+                {
+                    $sort: { "_id.year": 1, "_id.month": 1 }
+                }
+            ];
+        }
+
+        // Execute aggregation
+        const results = await analyticsModel.aggregate(aggregationPipeline);
         console.log('Aggregation Results:', results);
 
         // Initialize monthly data
