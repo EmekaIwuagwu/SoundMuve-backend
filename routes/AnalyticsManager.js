@@ -103,14 +103,17 @@ router.get('/revenueByType', async (req, res) => {
 
     // Select the correct model based on the 'type' parameter
     let analyticsModel;
-    let matchCriteria = { email, year: parseInt(year) };
+    let matchCriteria = {
+        email,
+        album_name, // Include album_name directly here
+        // No need to include 'year' here, we will extract it in the aggregate pipeline
+    };
 
     if (type === 'single') {
         analyticsModel = SingleAnalytics;
         matchCriteria.single_name = single_name; // Add single_name to match criteria
     } else if (type === 'album') {
         analyticsModel = AlbumAnalytics;
-        matchCriteria.album_name = album_name; // Add album_name to match criteria
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
     }
@@ -118,6 +121,7 @@ router.get('/revenueByType', async (req, res) => {
     try {
         // Step 1: Check if data exists for the provided parameters
         const existingData = await analyticsModel.findOne(matchCriteria);
+        console.log('Existing Data:', existingData); // Log existing data for debugging
         if (!existingData) {
             return res.status(404).json({ message: 'No data found for the provided parameters' });
         }
@@ -127,9 +131,11 @@ router.get('/revenueByType', async (req, res) => {
             {
                 $match: {
                     email: matchCriteria.email,
-                    year: matchCriteria.year,
-                    ...(type === 'album' && { album_name: matchCriteria.album_name }),
-                    ...(type === 'single' && { single_name: matchCriteria.single_name })
+                    album_name: matchCriteria.album_name,
+                    created_at: {
+                        $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
+                        $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
+                    }
                 }
             },
             {
@@ -189,8 +195,6 @@ router.get('/revenueByType', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
-
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
