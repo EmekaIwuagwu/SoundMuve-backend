@@ -100,8 +100,8 @@ router.get('/artist-revenue-monthly', async (req, res) => {
     }
 
     try {
-        // Check if any data exists that matches the criteria
-        const dataExists = await AlbumAnalytics.find({
+        // Check if records exist for the given parameters
+        const records = await AlbumAnalytics.find({
             artistName: artistName,
             song_title: song_title,
             email: email,
@@ -111,41 +111,9 @@ router.get('/artist-revenue-monthly', async (req, res) => {
             }
         });
 
-        console.log('Data Exists:', dataExists.length > 0);
+        console.log('Records Found:', records.length > 0);
 
-        // Aggregate to get the total revenue by month
-        const results = await AlbumAnalytics.aggregate([
-            {
-                // Match the filters from the query
-                $match: {
-                    artistName: artistName,
-                    song_title: song_title,
-                    email: email,
-                    created_at: {
-                        $gte: new Date(`${year}-01-01T00:00:00Z`),
-                        $lt: new Date(`${year + 1}-01-01T00:00:00Z`)
-                    }
-                }
-            },
-            {
-                // Group by year and month
-                $group: {
-                    _id: {
-                        year: { $year: "$created_at" },
-                        month: { $month: "$created_at" }
-                    },
-                    totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
-                    totalAppleRevenue: { $sum: "$revenue.apple" },
-                    totalSpotifyRevenue: { $sum: "$revenue.spotify" }
-                }
-            },
-            {
-                // Sort by year and month
-                $sort: { "_id.year": 1, "_id.month": 1 }
-            }
-        ]);
-
-        // Initialize data for all 12 months
+        // Initialize monthly data structure
         const monthlyData = Array.from({ length: 12 }, (_, i) => ({
             month: i + 1,
             totalRevenue: 0,
@@ -153,12 +121,12 @@ router.get('/artist-revenue-monthly', async (req, res) => {
             totalSpotifyRevenue: 0,
         }));
 
-        // Process results and populate monthly data
-        results.forEach(record => {
-            const monthIndex = record._id.month - 1; // Adjust to 0-based index
-            monthlyData[monthIndex].totalRevenue += record.totalRevenue || 0;
-            monthlyData[monthIndex].totalAppleRevenue += record.totalAppleRevenue || 0;
-            monthlyData[monthIndex].totalSpotifyRevenue += record.totalSpotifyRevenue || 0;
+        // Process records and populate monthly data
+        records.forEach(record => {
+            const monthIndex = new Date(record.created_at).getMonth(); // Get month index (0-based)
+            monthlyData[monthIndex].totalRevenue += (record.revenue.apple + record.revenue.spotify) || 0;
+            monthlyData[monthIndex].totalAppleRevenue += record.revenue.apple || 0;
+            monthlyData[monthIndex].totalSpotifyRevenue += record.revenue.spotify || 0;
         });
 
         // Month names for the formatted output
