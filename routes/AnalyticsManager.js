@@ -91,39 +91,25 @@ router.delete('/album-analytics/:id', async (req, res) => {
 
 
 router.get('/artist-revenue-monthly', async (req, res) => {
-    const { email, song_title, type } = req.query;
+    const { email, song_title } = req.query;
 
-    console.log('Query Parameters:', { email, song_title, type });
+    console.log('Query Parameters:', { email, song_title });
 
     // Validate query parameters
-    if (!email || !song_title || !type) {
-        console.log('Validation failed: Missing parameters');
-        return res.status(400).json({ message: 'Email, song_title, and type are required' });
+    if (!email || !song_title) {
+        return res.status(400).json({ message: 'Email and song_title are required' });
     }
 
     try {
-        let analyticsModel;
-
-        // Determine which model to use based on the type
-        if (type === 'album') {
-            analyticsModel = AlbumAnalytics;
-        } else if (type === 'single') {
-            analyticsModel = SingleAnalytics;
-        } else {
-            console.log('Invalid type:', type);
-            return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
-        }
-
         // Step 1: Check if data exists for the provided email and song_title
-        const existingData = await analyticsModel.findOne({ email, song_title });
+        const existingData = await AlbumAnalytics.findOne({ email, song_title });
 
         if (!existingData) {
-            console.log('No data found for:', { email, song_title });
             return res.status(404).json({ message: 'No data found for the provided email and song_title' });
         }
 
         // Step 2: Perform aggregation pipeline to get monthly data
-        const results = await analyticsModel.aggregate([
+        const results = await AlbumAnalytics.aggregate([
             {
                 $match: {
                     email: email,
@@ -151,8 +137,6 @@ router.get('/artist-revenue-monthly', async (req, res) => {
                 $sort: { "_id.year": 1, "_id.month": 1 } // Sort by year and month
             }
         ]);
-
-        console.log('Aggregation Results:', results);
 
         // Step 3: Initialize an array for the 12 months with zero values
         const monthlyData = Array.from({ length: 12 }, (_, index) => ({
@@ -191,7 +175,6 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
 
 
 // Get Total Apple and Spotify Revenue by Year
