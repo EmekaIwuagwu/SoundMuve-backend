@@ -92,52 +92,48 @@ router.delete('/album-analytics/:id', async (req, res) => {
 router.get('/revenueByType', async (req, res) => {
     const { type, email, year, single_name, album_name } = req.query;
 
-    // Log the incoming query parameters
     console.log('Query Parameters:', { type, email, year, single_name, album_name });
 
-    // Validate that all necessary query parameters are provided
     if (!type || !email || !year || 
         (type === 'single' && !single_name) || (type === 'album' && !album_name)) {
         return res.status(400).json({ message: 'Missing required parameters' });
     }
 
-    // Select the correct model based on the 'type' parameter
     let analyticsModel;
-    let matchCriteria = { email }; // Start with just the email
+    let matchCriteria = { email };
 
     if (type === 'single') {
         analyticsModel = SingleAnalytics;
-        matchCriteria.single_name = single_name; // Add single_name to match criteria
+        matchCriteria.single_name = single_name; // Ensure this is set for singles
     } else if (type === 'album') {
         analyticsModel = AlbumAnalytics;
-        matchCriteria.album_name = album_name; // Add album_name to match criteria for albums
+        matchCriteria.album_name = album_name; // Ensure this is set for albums
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
     }
 
     try {
-        // Step 1: Check if data exists for the provided parameters
+        // Log the match criteria for debugging
+        console.log('Match Criteria:', matchCriteria);
+        
+        // Check if data exists for the provided parameters
         const existingData = await analyticsModel.findOne(matchCriteria);
-        console.log('Match Criteria:', matchCriteria); // Log match criteria
         console.log('Existing Data:', existingData); // Log existing data for debugging
+        
         if (!existingData) {
             return res.status(404).json({ message: 'No data found for the provided parameters' });
         }
 
-        // Step 2: Perform the aggregation pipeline to get monthly data for the specified year
+        // Perform the aggregation to get monthly data for the specified year
         const results = await analyticsModel.aggregate([
             {
                 $match: {
                     email: matchCriteria.email,
-                    ...(type === 'single' && { single_name: matchCriteria.single_name }), // Match single_name for singles
-                    ...(type === 'album' && { album_name: matchCriteria.album_name }), // Match album_name for albums
-                    // If you decide to include year filtering, uncomment below
-                    /*
+                    single_name: matchCriteria.single_name, // Ensure correct match
                     created_at: {
                         $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
                         $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
                     }
-                    */
                 }
             },
             {
@@ -160,10 +156,9 @@ router.get('/revenueByType', async (req, res) => {
             }
         ]);
 
-        // Log the aggregation results
         console.log('Aggregation Results:', results);
 
-        // Step 3: Initialize an array for the 12 months with zero values
+        // Initialize monthly data
         const monthlyData = Array.from({ length: 12 }, (_, index) => ({
             month: new Date(0, index).toLocaleString('default', { month: 'short' }),
             totalRevenue: 0,
@@ -176,7 +171,7 @@ router.get('/revenueByType', async (req, res) => {
             percentageRevenueFromApple: "0.00"
         }));
 
-        // Step 4: Populate the monthly data with results from the aggregation
+        // Populate monthly data with results
         results.forEach(({ _id, totalRevenue, totalAppleRevenue, totalSpotifyRevenue, totalAppleStreams, totalSpotifyStreams, totalAppleStreamTime, totalSpotifyStreamTime }) => {
             const monthIndex = _id.month - 1; // Convert month (1-12) to index (0-11)
             monthlyData[monthIndex] = {
@@ -192,10 +187,7 @@ router.get('/revenueByType', async (req, res) => {
             };
         });
 
-        // Log the populated monthly data before sending the response
         console.log('Monthly Data:', monthlyData);
-
-        // Step 5: Return the final data
         res.json(monthlyData);
 
     } catch (error) {
@@ -203,8 +195,6 @@ router.get('/revenueByType', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
-
-
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
