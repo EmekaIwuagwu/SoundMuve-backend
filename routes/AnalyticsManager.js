@@ -843,81 +843,111 @@ router.get('/artistmonthlyReport/:artistName', async (req, res) => {
 
 //Added Corrected endpoints 
 
-// Utility function to aggregate monthly analytics
-async function getMonthlyAnalytics(schema, email) {
+// Utility function to aggregate monthly analytics with optional song/album filter
+async function getMonthlyAnalytics(schema, email, songTitle = null, albumTitle = null) {
     const months = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    
+
+    const matchCriteria = { email };
+    if (songTitle) {
+        matchCriteria.song_title = songTitle; // Filter by song title if provided
+    }
+    if (albumTitle) {
+        matchCriteria.album_title = albumTitle; // Filter by album title if provided
+    }
+
     const analytics = await schema.aggregate([
-        { $match: { email } },  // Filter by user email
+        { $match: matchCriteria },
         {
             $group: {
                 _id: { $month: "$created_at" },
                 totalStreams: { $sum: "$streams" },
                 totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
-                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } }
+                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } },
+                albumName: { $first: "$album_name" },  // Include album name
+                songTitle: { $first: "$song_title" }   // Include song title
             }
         }
     ]);
 
-    // Map the month index to month names
     return analytics.map(a => ({
-        month: months[a._id - 1],  // Adjust index to month names
+        month: months[a._id - 1],
         totalStreams: a.totalStreams,
         totalRevenue: a.totalRevenue,
-        totalSold: a.totalSold
+        totalSold: a.totalSold,
+        albumName: a.albumName,
+        songTitle: a.songTitle
     }));
 }
 
+// Endpoint for Monthly Analytics for Individual Users
+router.get('/user/monthly/:email', async (req, res) => {
+    const { songTitle, albumTitle } = req.query; // Expecting songTitle and albumTitle as query parameters
+    try {
+        const email = req.params.email;
+
+        const albumData = await getMonthlyAnalytics(AlbumAnalytics, email, songTitle, albumTitle);
+        const singleData = await getMonthlyAnalytics(SingleAnalytics, email, songTitle, albumTitle);
+        const storeData = await getMonthlyAnalytics(Store, email, songTitle, albumTitle);
+        const locationData = await getMonthlyAnalytics(Location, email, songTitle, albumTitle);
+
+        res.status(200).json({
+            albums: albumData,
+            singles: singleData,
+            stores: storeData,
+            locations: locationData
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Utility function to aggregate yearly analytics
-async function getYearlyAnalytics(schema, email) {
+async function getYearlyAnalytics(schema, email, songTitle = null, albumTitle = null) {
+    const matchCriteria = { email };
+    if (songTitle) {
+        matchCriteria.song_title = songTitle; // Filter by song title if provided
+    }
+    if (albumTitle) {
+        matchCriteria.album_title = albumTitle; // Filter by album title if provided
+    }
+
     const analytics = await schema.aggregate([
-        { $match: { email } },  // Filter by user email
+        { $match: matchCriteria },
         {
             $group: {
-                _id: null,
+                _id: { $year: "$created_at" },
                 totalStreams: { $sum: "$streams" },
                 totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
-                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } }
+                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } },
+                albumName: { $first: "$album_name" },  // Include album name
+                songTitle: { $first: "$song_title" }   // Include song title
             }
         }
     ]);
 
-    return analytics.length > 0 ? analytics[0] : { totalStreams: 0, totalRevenue: 0, totalSold: 0 };
+    return analytics.map(a => ({
+        year: a._id,
+        totalStreams: a.totalStreams,
+        totalRevenue: a.totalRevenue,
+        totalSold: a.totalSold,
+        albumName: a.albumName,
+        songTitle: a.songTitle
+    }));
 }
 
-// Endpoint 1: Get Monthly Analytics for Individual Users
-router.get('/user/monthly/:email', async (req, res) => {
-    try {
-        const email = req.params.email;
-
-        const albumData = await getMonthlyAnalytics(AlbumAnalytics, email);
-        const singleData = await getMonthlyAnalytics(SingleAnalytics, email);
-        const storeData = await getMonthlyAnalytics(Store, email);
-        const locationData = await getMonthlyAnalytics(Location, email);
-
-        res.status(200).json({
-            albums: albumData,
-            singles: singleData,
-            stores: storeData,
-            locations: locationData
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// Endpoint 2: Get Yearly Analytics for Individual Users
+// Endpoint for Yearly Analytics for Individual Users
 router.get('/user/yearly/:email', async (req, res) => {
+    const { songTitle, albumTitle } = req.query; // Expecting songTitle and albumTitle as query parameters
     try {
         const email = req.params.email;
 
-        const albumData = await getYearlyAnalytics(AlbumAnalytics, email);
-        const singleData = await getYearlyAnalytics(SingleAnalytics, email);
-        const storeData = await getYearlyAnalytics(Store, email);
-        const locationData = await getYearlyAnalytics(Location, email);
+        const albumData = await getYearlyAnalytics(AlbumAnalytics, email, songTitle, albumTitle);
+        const singleData = await getYearlyAnalytics(SingleAnalytics, email, songTitle, albumTitle);
+        const storeData = await getYearlyAnalytics(Store, email, songTitle, albumTitle);
+        const locationData = await getYearlyAnalytics(Location, email, songTitle, albumTitle);
 
         res.status(200).json({
             albums: albumData,
@@ -930,20 +960,43 @@ router.get('/user/yearly/:email', async (req, res) => {
     }
 });
 
-// Endpoint 3: Get Monthly Analytics for Artists in a Record Label
-router.get('/artist/record-label/monthly/:email/:artistName', async (req, res) => {
-    try {
-        const { email, artistName } = req.params;
+// Utility function for Record Label Artist Monthly Analytics
+async function getRecordLabelMonthlyAnalytics(schema, recordLabelEmail, artistName) {
+    const matchCriteria = { recordLabelemail: recordLabelEmail, artistName };
 
-        const artist = await ArtistForRecordLabel.findOne({ email, artistName });
-        if (!artist) {
-            return res.status(404).json({ message: "Artist not found in this record label" });
+    const analytics = await schema.aggregate([
+        { $match: matchCriteria },
+        {
+            $group: {
+                _id: { $month: "$created_at" },
+                totalStreams: { $sum: "$streams" },
+                totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
+                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } },
+                albumName: { $first: "$album_name" },  // Include album name
+                songTitle: { $first: "$song_title" }   // Include song title
+            }
         }
+    ]);
 
-        const albumData = await getMonthlyAnalytics(AlbumAnalytics, email);
-        const singleData = await getMonthlyAnalytics(SingleAnalytics, email);
-        const storeData = await getMonthlyAnalytics(Store, email);
-        const locationData = await getMonthlyAnalytics(Location, email);
+    return analytics.map(a => ({
+        month: a._id,
+        totalStreams: a.totalStreams,
+        totalRevenue: a.totalRevenue,
+        totalSold: a.totalSold,
+        albumName: a.albumName,
+        songTitle: a.songTitle
+    }));
+}
+
+// Endpoint for Monthly Analytics for Record Label Artists
+router.get('/record-label/artist/monthly/:recordLabelEmail/:artistName', async (req, res) => {
+    try {
+        const { recordLabelEmail, artistName } = req.params;
+
+        const albumData = await getRecordLabelMonthlyAnalytics(AlbumAnalytics, recordLabelEmail, artistName);
+        const singleData = await getRecordLabelMonthlyAnalytics(SingleAnalytics, recordLabelEmail, artistName);
+        const storeData = await getRecordLabelMonthlyAnalytics(Store, recordLabelEmail, artistName);
+        const locationData = await getRecordLabelMonthlyAnalytics(Location, recordLabelEmail, artistName);
 
         res.status(200).json({
             albums: albumData,
@@ -956,20 +1009,43 @@ router.get('/artist/record-label/monthly/:email/:artistName', async (req, res) =
     }
 });
 
-// Endpoint 4: Get Yearly Analytics for Artists in a Record Label
-router.get('/artist/record-label/yearly/:email/:artistName', async (req, res) => {
-    try {
-        const { email, artistName } = req.params;
+// Utility function for Record Label Artist Yearly Analytics
+async function getRecordLabelYearlyAnalytics(schema, recordLabelEmail, artistName) {
+    const matchCriteria = { recordLabelemail: recordLabelEmail, artistName };
 
-        const artist = await ArtistForRecordLabel.findOne({ email, artistName });
-        if (!artist) {
-            return res.status(404).json({ message: "Artist not found in this record label" });
+    const analytics = await schema.aggregate([
+        { $match: matchCriteria },
+        {
+            $group: {
+                _id: { $year: "$created_at" },
+                totalStreams: { $sum: "$streams" },
+                totalRevenue: { $sum: { $add: ["$revenue.apple", "$revenue.spotify"] } },
+                totalSold: { $sum: { $ifNull: ["$album_sold", "$single_sold"] } },
+                albumName: { $first: "$album_name" },  // Include album name
+                songTitle: { $first: "$song_title" }   // Include song title
+            }
         }
+    ]);
 
-        const albumData = await getYearlyAnalytics(AlbumAnalytics, email);
-        const singleData = await getYearlyAnalytics(SingleAnalytics, email);
-        const storeData = await getYearlyAnalytics(Store, email);
-        const locationData = await getYearlyAnalytics(Location, email);
+    return analytics.map(a => ({
+        year: a._id,
+        totalStreams: a.totalStreams,
+        totalRevenue: a.totalRevenue,
+        totalSold: a.totalSold,
+        albumName: a.albumName,
+        songTitle: a.songTitle
+    }));
+}
+
+// Endpoint for Yearly Analytics for Record Label Artists
+router.get('/record-label/artist/yearly/:recordLabelEmail/:artistName', async (req, res) => {
+    try {
+        const { recordLabelEmail, artistName } = req.params;
+
+        const albumData = await getRecordLabelYearlyAnalytics(AlbumAnalytics, recordLabelEmail, artistName);
+        const singleData = await getRecordLabelYearlyAnalytics(SingleAnalytics, recordLabelEmail, artistName);
+        const storeData = await getRecordLabelYearlyAnalytics(Store, recordLabelEmail, artistName);
+        const locationData = await getRecordLabelYearlyAnalytics(Location, recordLabelEmail, artistName);
 
         res.status(200).json({
             albums: albumData,
