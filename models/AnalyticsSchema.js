@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const albumAnalyticsSchema = new mongoose.Schema({
     email: { type: String, required: true },
     album_name: { type: String, required: true },
+    artistName: { type: String, required: true },
     song_title: { type: String, required: true },
     album_id: { type: String, required: true },
     album_sold: { type: Number, required: true },
@@ -29,6 +30,7 @@ const singleAnalyticsSchema = new mongoose.Schema({
     email: { type: String, required: true },
     single_name: { type: String, required: true },
     song_title: { type: String, required: true },
+    artistName: { type: String, required: true },
     singles_id: { type: String, required: true },
     single_sold: { type: Number, required: true },
     stream: {
