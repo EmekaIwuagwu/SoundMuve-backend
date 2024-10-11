@@ -103,17 +103,14 @@ router.get('/revenueByType', async (req, res) => {
 
     // Select the correct model based on the 'type' parameter
     let analyticsModel;
-    let matchCriteria = {
-        email,
-        album_name, // Include album_name directly here
-        // No need to include 'year' here, we will extract it in the aggregate pipeline
-    };
+    let matchCriteria = { email }; // Start with just the email
 
     if (type === 'single') {
         analyticsModel = SingleAnalytics;
         matchCriteria.single_name = single_name; // Add single_name to match criteria
     } else if (type === 'album') {
         analyticsModel = AlbumAnalytics;
+        matchCriteria.album_name = album_name; // Add album_name to match criteria for albums
     } else {
         return res.status(400).json({ message: 'Invalid type. Must be either "album" or "single"' });
     }
@@ -131,8 +128,11 @@ router.get('/revenueByType', async (req, res) => {
             {
                 $match: {
                     email: matchCriteria.email,
-                    album_name: matchCriteria.album_name,
-                    /*created_at: {
+                    ...(type === 'single' && { single_name: matchCriteria.single_name }), // Match single_name for singles
+                    ...(type === 'album' && { album_name: matchCriteria.album_name }), // Match album_name for albums
+                    // If you decide to include year filtering, uncomment below
+                    /*
+                    created_at: {
                         $gte: new Date(`${year}-01-01T00:00:00.000Z`), // Start of the year
                         $lt: new Date(`${year + 1}-01-01T00:00:00.000Z`), // Start of the next year
                     }
@@ -196,6 +196,7 @@ router.get('/revenueByType', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
