@@ -91,29 +91,23 @@ router.delete('/album-analytics/:id', async (req, res) => {
 
 
 router.get('/artist-revenue-monthly', async (req, res) => {
-    const { type, year, artistName, song_title, email } = req.query;
+    const { type, artistName, song_title, email } = req.query;
 
-    console.log('Query Parameters:', { type, year, artistName, song_title, email });
+    console.log('Query Parameters:', { type, artistName, song_title, email });
 
     if (type !== 'album') {
         return res.status(400).json({ message: 'Invalid type provided' });
     }
 
     try {
-        // Check if records exist for the given parameters
-        const records = await AlbumAnalytics.find({
+        // Fetch the data that matches the given parameters
+        const data = await AlbumAnalytics.find({
             artistName: artistName,
             song_title: song_title,
-            email: email,
-            created_at: {
-                $gte: new Date(`${year}-01-01T00:00:00Z`),
-                $lt: new Date(`${year + 1}-01-01T00:00:00Z`)
-            }
+            email: email
         });
 
-        console.log('Records Found:', records.length > 0);
-
-        // Initialize monthly data structure
+        // Initialize data for all 12 months
         const monthlyData = Array.from({ length: 12 }, (_, i) => ({
             month: i + 1,
             totalRevenue: 0,
@@ -121,10 +115,10 @@ router.get('/artist-revenue-monthly', async (req, res) => {
             totalSpotifyRevenue: 0,
         }));
 
-        // Process records and populate monthly data
-        records.forEach(record => {
-            const monthIndex = new Date(record.created_at).getMonth(); // Get month index (0-based)
-            monthlyData[monthIndex].totalRevenue += (record.revenue.apple + record.revenue.spotify) || 0;
+        // Process fetched data to populate monthly data
+        data.forEach(record => {
+            const monthIndex = new Date(record.created_at).getMonth(); // Get month (0-11)
+            monthlyData[monthIndex].totalRevenue += (record.revenue.apple || 0) + (record.revenue.spotify || 0);
             monthlyData[monthIndex].totalAppleRevenue += record.revenue.apple || 0;
             monthlyData[monthIndex].totalSpotifyRevenue += record.revenue.spotify || 0;
         });
@@ -134,29 +128,30 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Prepare the final formatted result
         const formattedResult = monthlyData.map((data, index) => {
-            if (data.totalRevenue > 0) {
-                const totalRevenue = data.totalRevenue.toFixed(2);
-                const totalAppleRevenue = data.totalAppleRevenue.toFixed(2);
-                const totalSpotifyRevenue = data.totalSpotifyRevenue.toFixed(2);
-                const percentageValue = ((data.totalAppleRevenue / data.totalRevenue) * 100).toFixed(2);
+            const totalRevenue = data.totalRevenue.toFixed(2);
+            const totalAppleRevenue = data.totalAppleRevenue.toFixed(2);
+            const totalSpotifyRevenue = data.totalSpotifyRevenue.toFixed(2);
+            const percentageValue = (totalRevenue > 0) ? ((data.totalAppleRevenue / totalRevenue) * 100).toFixed(2) : "0.00";
 
-                return {
-                    month: months[index],
-                    totalRevenue: totalRevenue,
-                    totalAppleRevenue: totalAppleRevenue,
-                    totalSpotifyRevenue: totalSpotifyRevenue,
-                    percentageValue: percentageValue
-                };
-            }
-            return null;
-        }).filter(data => data !== null); // Filter out months with no data
+            return {
+                month: months[index],
+                totalRevenue: totalRevenue,
+                totalAppleRevenue: totalAppleRevenue,
+                totalSpotifyRevenue: totalSpotifyRevenue,
+                percentageValue: percentageValue
+            };
+        });
 
-        res.json(formattedResult);
+        // Filter out months with zero revenue
+        const resultWithRevenue = formattedResult.filter(month => month.totalRevenue > 0);
+
+        res.json(resultWithRevenue);
     } catch (error) {
         console.error('Error fetching records:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
