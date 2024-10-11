@@ -118,6 +118,7 @@ router.get('/revenueByType', async (req, res) => {
     try {
         // Step 1: Check if data exists for the provided parameters
         const existingData = await analyticsModel.findOne(matchCriteria);
+        console.log('Match Criteria:', matchCriteria); // Log match criteria
         console.log('Existing Data:', existingData); // Log existing data for debugging
         if (!existingData) {
             return res.status(404).json({ message: 'No data found for the provided parameters' });
@@ -159,6 +160,9 @@ router.get('/revenueByType', async (req, res) => {
             }
         ]);
 
+        // Log the aggregation results
+        console.log('Aggregation Results:', results);
+
         // Step 3: Initialize an array for the 12 months with zero values
         const monthlyData = Array.from({ length: 12 }, (_, index) => ({
             month: new Date(0, index).toLocaleString('default', { month: 'short' }),
@@ -188,6 +192,9 @@ router.get('/revenueByType', async (req, res) => {
             };
         });
 
+        // Log the populated monthly data before sending the response
+        console.log('Monthly Data:', monthlyData);
+
         // Step 5: Return the final data
         res.json(monthlyData);
 
@@ -196,6 +203,7 @@ router.get('/revenueByType', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 
 // Get Total Apple and Spotify Revenue by Year
