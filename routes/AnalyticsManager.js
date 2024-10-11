@@ -93,7 +93,6 @@ router.delete('/album-analytics/:id', async (req, res) => {
 router.get('/artist-revenue-monthly', async (req, res) => {
     const { type, year, artistName, song_title, email } = req.query;
 
-    // Log incoming query parameters
     console.log('Query Parameters:', { type, year, artistName, song_title, email });
 
     if (type !== 'album') {
@@ -101,26 +100,17 @@ router.get('/artist-revenue-monthly', async (req, res) => {
     }
 
     try {
-        // Fetch data directly without aggregation
         const records = await AlbumAnalytics.find({
             artistName: artistName,
             song_title: song_title,
-            email: email, // Include email in the query
+            email: email,
             $expr: {
                 $eq: [{ $year: '$created_at' }, parseInt(year)],
             },
         });
 
-        // Log fetched records
         console.log('Fetched Records:', records);
 
-        if (records.length === 0) {
-            console.log('No records found for the specified parameters');
-        } else {
-            console.log(`Found ${records.length} records`);
-        }
-
-        // Create an object to store monthly data
         const monthlyData = Array.from({ length: 12 }, (_, i) => ({
             month: i + 1,
             totalRevenue: 0,
@@ -128,26 +118,21 @@ router.get('/artist-revenue-monthly', async (req, res) => {
             totalSpotifyRevenue: 0,
         }));
 
-        // Populate the monthly data with fetched records
         records.forEach(record => {
-            const monthIndex = new Date(record.created_at).getMonth(); // Get month index (0 for Jan, 11 for Dec)
+            const monthIndex = new Date(record.created_at).getMonth();
             monthlyData[monthIndex].totalRevenue += record.revenue.apple + record.revenue.spotify;
             monthlyData[monthIndex].totalAppleRevenue += record.revenue.apple;
             monthlyData[monthIndex].totalSpotifyRevenue += record.revenue.spotify;
         });
 
-        // Format the result for response
-        const months = [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        ];
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
         const formattedResult = monthlyData.map((data, index) => ({
             month: months[data.month - 1],
             totalRevenue: data.totalRevenue.toFixed(2),
             totalAppleRevenue: data.totalAppleRevenue.toFixed(2),
             totalSpotifyRevenue: data.totalSpotifyRevenue.toFixed(2),
-            percentageValue: "0.00", // Modify this logic if needed
+            percentageValue: "0.00",
         }));
 
         res.json(formattedResult);
