@@ -91,24 +91,21 @@ router.delete('/album-analytics/:id', async (req, res) => {
 
 
 router.get('/artist-revenue-monthly', async (req, res) => {
-    const { type, year, artistName, song_title } = req.query;
+    const { type, year, artistName, song_title, email } = req.query;
 
     // Log incoming query parameters
-    console.log('Query Parameters:', { type, year, artistName, song_title });
+    console.log('Query Parameters:', { type, year, artistName, song_title, email });
 
     if (type !== 'album') {
         return res.status(400).json({ message: 'Invalid type provided' });
     }
 
     try {
-        // Fetch all records for testing
-        const allRecords = await AlbumAnalytics.find({});
-        console.log('All Records:', allRecords); // Log all records
-
-        // Fetch filtered records
+        // Fetch data directly without aggregation
         const records = await AlbumAnalytics.find({
             artistName: artistName,
             song_title: song_title,
+            email: email, // Include email in the query
             $expr: {
                 $eq: [{ $year: '$created_at' }, parseInt(year)],
             },
@@ -116,6 +113,12 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Log fetched records
         console.log('Fetched Records:', records);
+
+        if (records.length === 0) {
+            console.log('No records found for the specified parameters');
+        } else {
+            console.log(`Found ${records.length} records`);
+        }
 
         // Create an object to store monthly data
         const monthlyData = Array.from({ length: 12 }, (_, i) => ({
@@ -127,7 +130,6 @@ router.get('/artist-revenue-monthly', async (req, res) => {
 
         // Populate the monthly data with fetched records
         records.forEach(record => {
-            console.log('Record:', record); // Log each record
             const monthIndex = new Date(record.created_at).getMonth(); // Get month index (0 for Jan, 11 for Dec)
             monthlyData[monthIndex].totalRevenue += record.revenue.apple + record.revenue.spotify;
             monthlyData[monthIndex].totalAppleRevenue += record.revenue.apple;
@@ -154,6 +156,7 @@ router.get('/artist-revenue-monthly', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 // Get Total Apple and Spotify Revenue by Year
 router.get('/analytics/revenue-yearly', async (req, res) => {
