@@ -96,7 +96,7 @@ router.get('/revenueByType', async (req, res) => {
     console.log('Query Parameters:', { type, email, artistName, year, single_name, album_name });
 
     // Validate that all necessary query parameters are provided
-    if (!type || !email || !artistName || !year || 
+    if (!type || !email || !year || 
         (type === 'single' && !single_name) || (type === 'album' && !album_name)) {
         return res.status(400).json({ message: 'Missing required parameters' });
     }
