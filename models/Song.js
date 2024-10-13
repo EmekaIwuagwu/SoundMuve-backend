@@ -11,6 +11,7 @@ const songSchema = new mongoose.Schema({
     copyright_ownership: { type: String, default: null },
     copyright_ownership_permissions: { type: String, default: null },
     isrc_number: { type: String, default: null },
+    status: { type: String, default: null },
     language_of_lyrics: { type: String, default: null },
     lyrics: { type: String, default: null },
     ticktokClipStartTime: { type: String, default: null },
